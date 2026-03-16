@@ -41,6 +41,8 @@ const COLORS = {
   redLight: "#FEE2E2",
 };
 
+const WORKER_URL = "https://medshift-ai.ada3527.workers.dev";
+
 const SHIFT_META = {
   temporary: { label: "Temp / Fill-in", bg: COLORS.amberLight, color: COLORS.amber },
   "part-time": { label: "Part-Time", bg: COLORS.blueLight, color: COLORS.blue },
@@ -184,7 +186,16 @@ async function storageSet(key, value) {
   } catch (e) { console.error("storageSet error", e); }
 }
 async function sendEmailNotification({ to, subject, body }) {
-  return { ok: false }; // AI features paused — enable when API key is configured
+  if (!to || !to.includes("@")) return { ok: false };
+  try {
+    const res = await fetch(WORKER_URL, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, mcp_servers: [{ type: "url", url: "https://gmail.mcp.claude.com/mcp", name: "gmail" }], messages: [{ role: "user", content: `Send an email via Gmail. To: "${to}", Subject: "${subject}", Body: "${body.replace(/"/g, "'")}". Send it now.` }] }),
+    });
+    const data = await res.json();
+    const text = data.content?.map(b => b.text || "").join("") || "";
+    return { ok: text.toLowerCase().includes("sent") || text.toLowerCase().includes("success") };
+  } catch { return { ok: false }; }
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -1277,7 +1288,31 @@ export default function App() {
 
     const analyzeResumeMatch = async (app, pos) => {
       if (analysisCredits < 1) { setShowUpgrade("analysis"); return; }
-      showToast("AI analysis coming soon!", "default");
+      setAnalyzingId(app.id);
+      try {
+        const stored = await storageGet(`ms4:resume:${app.id}`);
+        if (!stored) { showToast("Resume file not found", "error"); setAnalyzingId(null); return; }
+        const isPdf = app.resumeName?.toLowerCase().endsWith(".pdf");
+        let messages;
+        if (isPdf) {
+          const base64 = stored.split(",")[1];
+          messages = [{ role: "user", content: [
+            { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
+            { type: "text", text: `You are a healthcare staffing expert. Analyze how well this resume matches the job below. Respond ONLY with valid JSON, no markdown.\n\nJOB:\nRole: ${pos.role}\nType: ${pos.practiceType} / ${pos.shiftType}\nPay: ${pos.pay}\nRequirements: ${pos.requirements || "None listed"}\nDescription: ${pos.description || "None"}\n\n{"score":<1-10>,"verdict":"<Strong match|Good match|Partial match|Weak match>","strengths":["<s1>","<s2>","<s3>"],"gaps":["<g1>","<g2>"],"summary":"<2 sentences>"}` }
+          ]}];
+        } else {
+          messages = [{ role: "user", content: `Analyze candidate fit. JSON only.\nCANDIDATE: ${app.applicantName}, ${app.applicantRole}, ${app.applicantLocation}\nJOB: ${pos.role}, ${pos.practiceType}/${pos.shiftType}, pay: ${pos.pay}, requirements: ${pos.requirements || "None"}\n{"score":<1-10>,"verdict":"<Strong match|Good match|Partial match|Weak match>","strengths":["<s1>","<s2>"],"gaps":["<g1>"],"summary":"<2 sentences>"}` }];
+        }
+        const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 600, messages }) });
+        const data = await res.json();
+        const text = data.content?.find(b => b.type === "text")?.text || "{}";
+        const result = JSON.parse(text.replace(/```json|```/g, "").trim());
+        setResumeMatches(prev => ({ ...prev, [app.id]: result }));
+        const newCredits = analysisCredits - 1;
+        setAnalysisCredits(newCredits);
+        await storageSet(`ms4:analysiscredits:${profile.uid}`, newCredits);
+      } catch (e) { showToast("Analysis failed — try again", "error"); }
+      setAnalyzingId(null);
     };
 
     return (
@@ -1568,11 +1603,17 @@ export default function App() {
 
     const getAiMatch = async (pos) => {
       if (candidateMatchCredits < 1) { setShowMatchPaywall(true); return; }
-      showToast("AI match coming soon!", "default");
-      // When API is enabled: deduct credit here
-      // const newCredits = candidateMatchCredits - 1;
-      // setCandidateMatchCredits(newCredits);
-      // await storageSet(`ms4:matchcredits:${profile.uid}`, newCredits);
+      setAiLoading(true); setAiMatch(null);
+      try {
+        const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 600, messages: [{ role: "user", content: `Assess candidate fit. JSON only.\nCANDIDATE: role=${profile.role}, location=${profile.location}\nPOSITION: role=${pos.role}, type=${pos.practiceType}/${pos.shiftType}, pay=${pos.pay}, requirements=${pos.requirements || "none"}\nRespond: {"score":<1-10>,"summary":"<2 sentences>","tips":["<tip1>","<tip2>"]}` }] }) });
+        const data = await res.json();
+        const text = data.content?.find(b => b.type === "text")?.text || "{}";
+        setAiMatch(JSON.parse(text.replace(/```json|```/g, "").trim()));
+        const newCredits = candidateMatchCredits - 1;
+        setCandidateMatchCredits(newCredits);
+        await storageSet(`ms4:matchcredits:${profile.uid}`, newCredits);
+      } catch { setAiMatch({ score: null, summary: "Could not load analysis.", tips: [] }); }
+      setAiLoading(false);
     };
 
     return (

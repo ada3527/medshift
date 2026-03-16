@@ -42,6 +42,7 @@ const COLORS = {
 };
 
 const WORKER_URL = "https://medshift-ai.ada3527.workers.dev";
+const PAYPAL_CLIENT_ID = "AemJL8NuAPnEF4MTbqnsZvcuUDP7YQh1_6f-uqdzBJtYBbdWYu0Op7J7QLa_uG4pu7uCNlr92y3qrFAQ";
 
 const SHIFT_META = {
   temporary: { label: "Temp / Fill-in", bg: COLORS.amberLight, color: COLORS.amber },
@@ -1142,7 +1143,6 @@ export default function App() {
     const FREE_POSITIONS = 2;
     const POSTING_PRICE = "$15";
     const ANALYSIS_PRICE = "$15";
-    const PAYPAL_CLIENT_ID = "AemJL8NuAPnEF4MTbqnsZvcuUDP7YQh1_6f-uqdzBJtYBbdWYu0Op7J7QLa_uG4pu7uCNlr92y3qrFAQ";
 
     const myPositions = positions.filter(p => p.officeId === profile.uid);
     const myApplicants = applications.filter(a => a.officeId === profile.uid);
@@ -1547,7 +1547,6 @@ export default function App() {
     };
 
     const MATCH_PRICE = "5.00";
-    const PAYPAL_CLIENT_ID = "AemJL8NuAPnEF4MTbqnsZvcuUDP7YQh1_6f-uqdzBJtYBbdWYu0Op7J7QLa_uG4pu7uCNlr92y3qrFAQ";
 
     const CandidateMatchPaywall = () => {
       useEffect(() => {

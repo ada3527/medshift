@@ -1345,15 +1345,6 @@ export default function App() {
                   <div style={{ color: COLORS.teal, fontWeight: 800, fontSize: 18 }}>{postingCredits} posting{postingCredits !== 1 ? "s" : ""}</div>
                 </div>
               )}
-              {analysisCredits > 0 && (
-                <div>
-                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ranking credits</div>
-                  <div style={{ color: COLORS.teal, fontWeight: 800, fontSize: 18 }}>{analysisCredits}</div>
-                </div>
-              )}
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setShowUpgrade("analysis")} style={{ background: "rgba(255,255,255,0.1)", color: COLORS.white, border: "none", padding: "8px 14px", borderRadius: 10, fontWeight: 700, fontSize: 12, flexShrink: 0 }}>+ Resume analysis · {ANALYSIS_PRICE}</button>
             </div>
           </div>
 
@@ -1410,14 +1401,12 @@ export default function App() {
 
                 {posApps.length === 0 && <div style={{ fontSize: 13, color: COLORS.gray400, fontStyle: "italic" }}>No applicants yet — share your posting to get responses!</div>}
 
-                {posApps.length > 0 && (
+                {posApps.length > 0 && posApps.some(a => a.resumeName) && (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, color: COLORS.gray400, fontWeight: 500 }}>{posApps.length} applicant{posApps.length > 1 ? "s" : ""}{posApps.filter(a => a.resumeName).length > 0 ? ` · ${posApps.filter(a => a.resumeName).length} with resume` : ""}</span>
-                    {posApps.some(a => a.resumeName) && (
-                      <button onClick={() => analyzeAllApplicants(pos, posApps)} disabled={analyzingId === "all-" + pos.id} style={{ fontSize: 12, padding: "5px 12px", background: Object.keys(resumeMatches).some(id => posApps.find(a => a.id === id)) ? COLORS.tealLight : "transparent", color: COLORS.teal, border: `1.5px solid ${COLORS.teal}`, borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
-                        {analyzingId === "all-" + pos.id ? "Analyzing all…" : "✨ Rank all applicants"}
-                      </button>
-                    )}
+                    <span style={{ fontSize: 12, color: COLORS.gray400, fontWeight: 500 }}>{posApps.length} applicant{posApps.length > 1 ? "s" : ""} · {posApps.filter(a => a.resumeName).length} with resume</span>
+                    <button onClick={() => analyzeAllApplicants(pos, posApps)} disabled={analyzingId === "all-" + pos.id} style={{ fontSize: 12, padding: "5px 12px", background: Object.keys(resumeMatches).some(id => posApps.find(a => a.id === id)) ? COLORS.tealLight : "transparent", color: COLORS.teal, border: `1.5px solid ${COLORS.teal}`, borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
+                      {analyzingId === "all-" + pos.id ? "Analyzing all…" : "✨ Rank all applicants"}
+                    </button>
                   </div>
                 )}
 

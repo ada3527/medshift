@@ -228,17 +228,14 @@ export default function App() {
   const [resumeFile, setResumeFile] = useState(null);
   const [resumeData, setResumeData] = useState(null);
   const [aiMatch, setAiMatch] = useState(null);
-  const [resumeMatches, setResumeMatches] = useState({});
   const [analyzingId, setAnalyzingId] = useState(null);
   const [postingCredits, setPostingCredits] = useState(0);
   const [analysisCredits, setAnalysisCredits] = useState(0);
-  const [candidateMatchCredits, setCandidateMatchCredits] = useState(0);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [proCode, setProCode] = useState("");
   const [proCodeError, setProCodeError] = useState("");
   const [publicDetailPos, setPublicDetailPos] = useState(null);
   const [dashDetailPos, setDashDetailPos] = useState(null);
-  const [showMatchPaywall, setShowMatchPaywall] = useState(false);
   const [editName, setEditName] = useState("");
   const [editOffice, setEditOffice] = useState("");
   const [editRole, setEditRole] = useState("Dental Assistant");
@@ -250,7 +247,6 @@ export default function App() {
   const [pwMsg, setPwMsg] = useState({ text: "", ok: false });
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPw, setSavingPw] = useState(false);
-  const [aiLoading, setAiLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterShift, setFilterShift] = useState("all");
@@ -279,14 +275,12 @@ export default function App() {
           else setScreen("dashboard");
         } else setScreen("setup");
         loadData();
-        const [postCredits, anlsCredits, matchCredits] = await Promise.all([
+        const [postCredits, anlsCredits] = await Promise.all([
           storageGet(`ms4:postcredits:${user.uid}`),
-          storageGet(`ms4:analysiscredits:${user.uid}`),
-          storageGet(`ms4:matchcredits:${user.uid}`)
+          storageGet(`ms4:analysiscredits:${user.uid}`)
         ]);
         setPostingCredits(postCredits || 0);
         setAnalysisCredits(anlsCredits || 0);
-        setCandidateMatchCredits(matchCredits || 0);
       } else { setProfile(null); setScreen("landing"); loadData(); }
       setAuthLoading(false);
     });
@@ -1213,7 +1207,7 @@ export default function App() {
               {isPosting ? "Post an additional position" : "Unlock resume analysis"}
             </div>
             <div style={{ fontSize: 36, fontWeight: 800, color: COLORS.teal }}>${amount}</div>
-            <div style={{ fontSize: 13, color: COLORS.gray400, marginTop: 4 }}>one-time · per {isPosting ? "posting" : "analysis"}</div>
+            <div style={{ fontSize: 13, color: COLORS.gray400, marginTop: 4 }}>{isPosting ? "one-time · per posting" : "one-time · ranks all applicants for this position"}</div>
           </div>
 
           <div style={{ background: COLORS.gray50, borderRadius: 12, padding: "1rem 1.25rem", marginBottom: "1.5rem" }}>
@@ -1286,33 +1280,40 @@ export default function App() {
       showToast(status === "hired" ? "Hired! Candidate notified." : "Declined.", status === "hired" ? "success" : "default");
     };
 
-    const analyzeResumeMatch = async (app, pos) => {
+    const analyzeAllApplicants = async (pos, posApps) => {
+      const appsWithResume = posApps.filter(a => a.resumeName);
+      if (appsWithResume.length === 0) { showToast("No applicants have uploaded a resume yet.", "error"); return; }
       if (analysisCredits < 1) { setShowUpgrade("analysis"); return; }
-      setAnalyzingId(app.id);
-      try {
-        const stored = await storageGet(`ms4:resume:${app.id}`);
-        if (!stored) { showToast("Resume file not found", "error"); setAnalyzingId(null); return; }
-        const isPdf = app.resumeName?.toLowerCase().endsWith(".pdf");
-        let messages;
-        if (isPdf) {
-          const base64 = stored.split(",")[1];
-          messages = [{ role: "user", content: [
-            { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
-            { type: "text", text: `You are a healthcare staffing expert. Analyze how well this resume matches the job below. Respond ONLY with valid JSON, no markdown.\n\nJOB:\nRole: ${pos.role}\nType: ${pos.practiceType} / ${pos.shiftType}\nPay: ${pos.pay}\nRequirements: ${pos.requirements || "None listed"}\nDescription: ${pos.description || "None"}\n\n{"score":<1-10>,"verdict":"<Strong match|Good match|Partial match|Weak match>","strengths":["<s1>","<s2>","<s3>"],"gaps":["<g1>","<g2>"],"summary":"<2 sentences>"}` }
-          ]}];
-        } else {
-          messages = [{ role: "user", content: `Analyze candidate fit. JSON only.\nCANDIDATE: ${app.applicantName}, ${app.applicantRole}, ${app.applicantLocation}\nJOB: ${pos.role}, ${pos.practiceType}/${pos.shiftType}, pay: ${pos.pay}, requirements: ${pos.requirements || "None"}\n{"score":<1-10>,"verdict":"<Strong match|Good match|Partial match|Weak match>","strengths":["<s1>","<s2>"],"gaps":["<g1>"],"summary":"<2 sentences>"}` }];
-        }
-        const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 600, messages }) });
-        const data = await res.json();
-        const text = data.content?.find(b => b.type === "text")?.text || "{}";
-        const result = JSON.parse(text.replace(/```json|```/g, "").trim());
-        setResumeMatches(prev => ({ ...prev, [app.id]: result }));
-        const newCredits = analysisCredits - 1;
-        setAnalysisCredits(newCredits);
-        await storageSet(`ms4:analysiscredits:${profile.uid}`, newCredits);
-      } catch (e) { showToast("Analysis failed — try again", "error"); }
+      if (!window.confirm(`Rank all ${appsWithResume.length} applicant${appsWithResume.length > 1 ? "s" : ""} with resumes? This uses 1 credit ($15).`)) return;
+      setAnalyzingId("all-" + pos.id);
+      for (const app of appsWithResume) {
+        try {
+          const stored = await storageGet(`ms4:resume:${app.id}`);
+          if (!stored) continue;
+          const isPdf = app.resumeName?.toLowerCase().endsWith(".pdf");
+          let messages;
+          if (isPdf) {
+            const base64 = stored.split(",")[1];
+            messages = [{ role: "user", content: [
+              { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
+              { type: "text", text: `Healthcare staffing expert. Analyze resume vs job. JSON only, no markdown.\nJOB: Role=${pos.role}, Type=${pos.practiceType}/${pos.shiftType}, Pay=${pos.pay}, Requirements=${pos.requirements || "None"}, Description=${pos.description || "None"}\n{"score":<1-10>,"verdict":"<Strong match|Good match|Partial match|Weak match>","strengths":["<s1>","<s2>"],"gaps":["<g1>"],"summary":"<2 sentences>"}` }
+            ]}];
+          } else {
+            messages = [{ role: "user", content: `Candidate fit. JSON only.\nCANDIDATE: ${app.applicantName}, ${app.applicantRole}, ${app.applicantLocation}\nJOB: ${pos.role}, ${pos.practiceType}/${pos.shiftType}, pay=${pos.pay}, requirements=${pos.requirements || "None"}\n{"score":<1-10>,"verdict":"<Strong match|Good match|Partial match|Weak match>","strengths":["<s1>"],"gaps":["<g1>"],"summary":"<2 sentences>"}` }];
+          }
+          const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 400, messages }) });
+          const data = await res.json();
+          const text = data.content?.find(b => b.type === "text")?.text || "{}";
+          const result = JSON.parse(text.replace(/```json|```/g, "").trim());
+          setResumeMatches(prev => ({ ...prev, [app.id]: result }));
+        } catch (e) { /* skip failed */ }
+      }
+      // Deduct 1 credit for the whole position
+      const newCredits = analysisCredits - 1;
+      setAnalysisCredits(newCredits);
+      await storageSet(`ms4:analysiscredits:${profile.uid}`, newCredits);
       setAnalyzingId(null);
+      showToast("All applicants ranked! Sorted by best match.", "success");
     };
 
     return (
@@ -1346,7 +1347,7 @@ export default function App() {
               )}
               {analysisCredits > 0 && (
                 <div>
-                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Analysis credits</div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Ranking credits</div>
                   <div style={{ color: COLORS.teal, fontWeight: 800, fontSize: 18 }}>{analysisCredits}</div>
                 </div>
               )}
@@ -1409,9 +1410,26 @@ export default function App() {
 
                 {posApps.length === 0 && <div style={{ fontSize: 13, color: COLORS.gray400, fontStyle: "italic" }}>No applicants yet — share your posting to get responses!</div>}
 
-                {posApps.map(app => {
+                {posApps.length > 0 && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: 12, color: COLORS.gray400, fontWeight: 500 }}>{posApps.length} applicant{posApps.length > 1 ? "s" : ""}{posApps.filter(a => a.resumeName).length > 0 ? ` · ${posApps.filter(a => a.resumeName).length} with resume` : ""}</span>
+                    {posApps.some(a => a.resumeName) && (
+                      <button onClick={() => analyzeAllApplicants(pos, posApps)} disabled={analyzingId === "all-" + pos.id} style={{ fontSize: 12, padding: "5px 12px", background: Object.keys(resumeMatches).some(id => posApps.find(a => a.id === id)) ? COLORS.tealLight : "transparent", color: COLORS.teal, border: `1.5px solid ${COLORS.teal}`, borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
+                        {analyzingId === "all-" + pos.id ? "Analyzing all…" : "✨ Rank all applicants"}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {[...posApps].sort((a, b) => {
+                  const scoreA = resumeMatches[a.id]?.score || 0;
+                  const scoreB = resumeMatches[b.id]?.score || 0;
+                  return scoreB - scoreA;
+                }).map((app, appIndex) => {
                   const match = resumeMatches[app.id];
                   const isAnalyzing = analyzingId === app.id;
+                  const hasAnyMatches = posApps.some(a => resumeMatches[a.id]);
+                  const rank = hasAnyMatches ? appIndex + 1 : null;
                   const verdictColors = {
                     "Strong match": { bg: COLORS.greenLight, color: COLORS.green },
                     "Good match": { bg: COLORS.tealLight, color: COLORS.teal },
@@ -1424,7 +1442,10 @@ export default function App() {
                       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0" }}>
                         <Avatar name={app.applicantName} teal />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: 700, fontSize: 14 }}>{app.applicantName}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            {rank && <span style={{ fontSize: 11, fontWeight: 800, background: rank === 1 ? COLORS.green : rank === 2 ? COLORS.teal : COLORS.gray200, color: rank <= 2 ? COLORS.white : COLORS.gray600, padding: "2px 8px", borderRadius: 20, flexShrink: 0 }}>#{rank}</span>}
+                            <div style={{ fontWeight: 700, fontSize: 14 }}>{app.applicantName}</div>
+                          </div>
                           <div style={{ fontSize: 12, color: COLORS.gray400, marginTop: 1 }}>{app.applicantRole} · {app.applicantLocation}</div>
                           {app.message && <div style={{ fontSize: 12, color: COLORS.gray600, marginTop: 4, fontStyle: "italic", background: COLORS.gray50, padding: "4px 10px", borderRadius: 8, borderLeft: `3px solid ${COLORS.teal}` }}>"{app.message}"</div>}
                         </div>
@@ -1439,11 +1460,6 @@ export default function App() {
                               else showToast("Resume not found", "error");
                             }} style={{ fontSize: 12, padding: "6px 12px", background: COLORS.blueLight, color: COLORS.blue, border: `1.5px solid ${COLORS.blueLight}` }}>
                               📄 Resume
-                            </button>
-                          )}
-                          {app.resumeName && (
-                            <button onClick={() => analyzeResumeMatch(app, pos)} disabled={isAnalyzing} style={{ fontSize: 12, padding: "6px 12px", background: analysisCredits < 1 ? COLORS.gray100 : match ? COLORS.tealLight : "transparent", color: analysisCredits < 1 ? COLORS.gray400 : COLORS.teal, border: `1.5px solid ${analysisCredits < 1 ? COLORS.gray200 : COLORS.teal}`, fontWeight: 600 }}>
-                              {isAnalyzing ? "Analyzing…" : analysisCredits < 1 ? `🔒 Buy · ${ANALYSIS_PRICE}` : match ? "✨ Re-analyze" : "✨ Analyze match"}
                             </button>
                           )}
                           {app.status === "pending"
@@ -1546,81 +1562,11 @@ export default function App() {
       showToast("Application sent!", "success"); setLoading(false);
     };
 
-    const MATCH_PRICE = "5.00";
-
-    const CandidateMatchPaywall = () => {
-      useEffect(() => {
-        if (!showMatchPaywall) return;
-        const scriptId = "paypal-sdk";
-        const existing = document.getElementById(scriptId);
-        const renderButtons = () => {
-          const container = document.getElementById("paypal-match-btn");
-          if (!container || container.children.length > 0) return;
-          window.paypal.Buttons({
-            style: { layout: "vertical", color: "gold", shape: "rect", label: "pay" },
-            createOrder: (data, actions) => actions.order.create({
-              purchase_units: [{ amount: { value: MATCH_PRICE }, description: "MedShift — AI Match Analysis" }]
-            }),
-            onApprove: async (data, actions) => {
-              await actions.order.capture();
-              const newCredits = (candidateMatchCredits || 0) + 1;
-              setCandidateMatchCredits(newCredits);
-              await storageSet(`ms4:matchcredits:${profile.uid}`, newCredits);
-              setShowMatchPaywall(false);
-              showToast("✅ Match credit added! Click 'Check my fit' to analyze.", "success");
-            },
-            onError: () => showToast("Payment failed — please try again", "error")
-          }).render("#paypal-match-btn");
-        };
-        if (!existing) {
-          const script = document.createElement("script");
-          script.id = scriptId; script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&currency=USD&intent=capture`;
-          script.onload = renderButtons; document.body.appendChild(script);
-        } else if (window.paypal) { renderButtons(); }
-        else { existing.addEventListener("load", renderButtons); }
-      }, [showMatchPaywall]);
-
-      if (!showMatchPaywall) return null;
-      return (
-        <Modal open onClose={() => setShowMatchPaywall(false)} title="AI Match Analysis">
-          <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-            <div style={{ fontSize: 40, marginBottom: 10 }}>✨</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: COLORS.navy, marginBottom: 4 }}>Check your fit</div>
-            <div style={{ fontSize: 34, fontWeight: 800, color: COLORS.teal }}>$5</div>
-            <div style={{ fontSize: 13, color: COLORS.gray400, marginTop: 4 }}>one-time · per analysis</div>
-          </div>
-          <div style={{ background: COLORS.gray50, borderRadius: 12, padding: "1rem 1.25rem", marginBottom: "1.5rem" }}>
-            {["AI scores your fit out of 10", "2-sentence summary of your match", "Personalized tips to strengthen your application"].map(t => (
-              <div key={t} style={{ fontSize: 13, color: COLORS.gray600, marginBottom: 4, paddingLeft: 10, borderLeft: `2px solid ${COLORS.teal}` }}>✓ {t}</div>
-            ))}
-          </div>
-          <div id="paypal-match-btn" style={{ marginBottom: "0.5rem" }} />
-          <div style={{ fontSize: 11, color: COLORS.gray400, textAlign: "center" }}>Secure payment via PayPal · Credit added instantly</div>
-        </Modal>
-      );
-    };
-
-    const getAiMatch = async (pos) => {
-      if (candidateMatchCredits < 1) { setShowMatchPaywall(true); return; }
-      setAiLoading(true); setAiMatch(null);
-      try {
-        const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 600, messages: [{ role: "user", content: `Assess candidate fit. JSON only.\nCANDIDATE: role=${profile.role}, location=${profile.location}\nPOSITION: role=${pos.role}, type=${pos.practiceType}/${pos.shiftType}, pay=${pos.pay}, requirements=${pos.requirements || "none"}\nRespond: {"score":<1-10>,"summary":"<2 sentences>","tips":["<tip1>","<tip2>"]}` }] }) });
-        const data = await res.json();
-        const text = data.content?.find(b => b.type === "text")?.text || "{}";
-        setAiMatch(JSON.parse(text.replace(/```json|```/g, "").trim()));
-        const newCredits = candidateMatchCredits - 1;
-        setCandidateMatchCredits(newCredits);
-        await storageSet(`ms4:matchcredits:${profile.uid}`, newCredits);
-      } catch { setAiMatch({ score: null, summary: "Could not load analysis.", tips: [] }); }
-      setAiLoading(false);
-    };
-
     return (
       <>
         <GlobalStyles />
         <Toast {...toast} />
         <MessagingModal />
-        <CandidateMatchPaywall />
         <Header title={profile.name} sub={profile.role + " · " + (profile.location || "MedShift")} />
 
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "1.75rem 1.5rem" }}>
@@ -1762,31 +1708,6 @@ export default function App() {
               )}
 
               <Divider />
-
-              {/* AI Match */}
-              <div style={{ marginBottom: 18 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: aiMatch ? 10 : 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 16 }}>✨</span>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: COLORS.navy }}>AI match analysis</span>
-                  </div>
-                  <button onClick={() => getAiMatch(detailPos)} disabled={aiLoading} style={{ fontSize: 12, padding: "6px 14px", background: candidateMatchCredits > 0 ? COLORS.tealLight : COLORS.amberLight, color: candidateMatchCredits > 0 ? COLORS.teal : COLORS.amber, border: "none", fontWeight: 600 }}>
-                    {aiLoading ? "Analyzing…" : aiMatch ? "Re-analyze" : candidateMatchCredits > 0 ? `✨ Check my fit (${candidateMatchCredits} left)` : "✨ Check my fit · $5"}
-                  </button>
-                </div>
-                {aiMatch && (
-                  <div style={{ background: COLORS.tealLight, borderRadius: 12, padding: 16, border: `1px solid ${COLORS.teal}22` }}>
-                    {aiMatch.score && (
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
-                        <div style={{ background: COLORS.teal, color: COLORS.white, borderRadius: 12, padding: "6px 14px", fontWeight: 800, fontSize: 18 }}>{aiMatch.score}/10</div>
-                        <div style={{ fontSize: 13, color: COLORS.gray600, fontWeight: 500 }}>match score</div>
-                      </div>
-                    )}
-                    <div style={{ fontSize: 14, lineHeight: 1.6, color: COLORS.navy, marginBottom: aiMatch.tips?.length ? 10 : 0 }}>{aiMatch.summary}</div>
-                    {aiMatch.tips?.map((t, i) => <div key={i} style={{ fontSize: 13, color: COLORS.gray600, marginTop: 4, paddingLeft: 12, borderLeft: `2px solid ${COLORS.teal}` }}>💡 {t}</div>)}
-                  </div>
-                )}
-              </div>
 
               {appliedIds.has(detailPos.id)
                 ? <div style={{ textAlign: "center", color: COLORS.green, fontWeight: 700, padding: "14px", background: COLORS.greenLight, borderRadius: 12 }}>✓ You have already applied to this position</div>

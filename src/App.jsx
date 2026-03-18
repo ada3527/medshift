@@ -187,6 +187,22 @@ async function storageSet(key, value) {
     await setDoc(ref, { value });
   } catch (e) { console.error("storageSet error", e); }
 }
+
+async function getAllProfiles() {
+  try {
+    const snap = await getDocs(collection(db, "appdata"));
+    const profiles = [];
+    snap.forEach(d => {
+      if (d.id.startsWith("ms4_profile_")) {
+        const val = d.data().value;
+        try {
+          profiles.push(typeof val === "string" ? JSON.parse(val) : val);
+        } catch { profiles.push(val); }
+      }
+    });
+    return profiles.filter(Boolean);
+  } catch { return []; }
+}
 async function sendEmailNotification({ to, subject, body }) {
   if (!to || !to.includes("@")) return { ok: false };
   try {
@@ -240,6 +256,7 @@ export default function App() {
   const [publicDetailPos, setPublicDetailPos] = useState(null);
   const [dashDetailPos, setDashDetailPos] = useState(null);
   const [editingPos, setEditingPos] = useState(null);
+  const [allProfiles, setAllProfiles] = useState([]);
   const [landingSearch, setLandingSearch] = useState("");
   const [landingType, setLandingType] = useState("all");
   const [landingShift, setLandingShift] = useState("all");
@@ -298,6 +315,10 @@ export default function App() {
 
   useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, msgModal]);
 
+  useEffect(() => {
+    if (screen === "admin") getAllProfiles().then(setAllProfiles);
+  }, [screen]);
+
   const handleEmailAuth = async () => {
     setAuthError(""); setLoading(true);
     try {
@@ -307,6 +328,11 @@ export default function App() {
         const prof = { uid: cred.user.uid, name: displayName || email.split("@")[0], email: cred.user.email, userType: setupUserType, ...(setupUserType === "office" ? { office: setupOffice, location: setupLocation, address: setupAddress, phone: setupPhone } : { role: setupRole, location: setupLocation }) };
         await storageSet(`ms4:profile:${cred.user.uid}`, prof);
         setProfile(prof);
+        if (setupUserType === "office") {
+          const reg = await storageGet("ms4:officeregistry") || {};
+          reg[cred.user.uid] = { id: cred.user.uid, name: setupOffice, email: cred.user.email, address: setupAddress, phone: setupPhone, joinedAt: new Date().toISOString() };
+          await storageSet("ms4:officeregistry", reg);
+        }
         if (setupUserType === "office") setScreen("office");
         else setScreen("dashboard");
       } else {
@@ -1092,6 +1118,11 @@ export default function App() {
       await storageSet(`ms4:profile:${profile.uid}`, updated);
       setProfile(updated);
       if (authUser && editName !== authUser.displayName) await updateProfile(authUser, { displayName: editName });
+      if (isOffice) {
+        const reg = await storageGet("ms4:officeregistry") || {};
+        reg[profile.uid] = { ...reg[profile.uid], id: profile.uid, name: editOffice, email: profile.email, address: editAddress, phone: editPhone };
+        await storageSet("ms4:officeregistry", reg);
+      }
       setProfileMsg("Profile saved!");
       setTimeout(() => setProfileMsg(""), 3000);
       setSavingProfile(false);
@@ -1208,15 +1239,23 @@ export default function App() {
   if (screen === "admin") {
     if (authUser?.email !== ADMIN_EMAIL) return null;
 
-    // Build office list — address/phone come from the office's saved profile if they've updated it
-    const allOffices = positions.reduce((acc, p) => {
-      if (!acc.find(o => o.id === p.officeId)) acc.push({ id: p.officeId, name: p.officeName, email: p.officeEmail, address: p.officeAddress || "", phone: p.officePhone || "" });
-      return acc;
-    }, []);
-    const allApplicants = applications.reduce((acc, a) => { if (!acc.find(x => x.id === a.applicantId)) acc.push({ id: a.applicantId, name: a.applicantName, email: a.applicantEmail, role: a.applicantRole }); return acc; }, []);
+    const officeProfiles = allProfiles.filter(p => p?.userType === "office");
+    const candidateProfiles = allProfiles.filter(p => p?.userType === "assistant" || p?.userType === "provider");
     const activePositions = positions.filter(p => p.status === "active");
     const closedPositions = positions.filter(p => p.status === "closed");
     const hiredApps = applications.filter(a => a.status === "hired");
+
+    if (allProfiles.length === 0 && screen === "admin") {
+      // Still loading — show spinner
+      return (
+        <>
+          <GlobalStyles />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: COLORS.navy, flexDirection: "column", gap: 12 }}>
+            <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 14 }}>Loading admin data…</div>
+          </div>
+        </>
+      );
+    }
 
     const adminHidePos = async (posId) => {
       const next = positions.map(p => p.id === posId ? { ...p, status: "hidden" } : p);
@@ -1264,8 +1303,8 @@ export default function App() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14, marginBottom: "2rem" }}>
               {[
                 { icon: "📋", value: activePositions.length, label: "Active positions", color: COLORS.teal },
-                { icon: "🏥", value: allOffices.length, label: "Offices", color: COLORS.blue },
-                { icon: "👥", value: allApplicants.length, label: "Candidates", color: COLORS.green },
+                { icon: "🏥", value: officeProfiles.length, label: "Offices", color: COLORS.blue },
+                { icon: "👥", value: candidateProfiles.length, label: "Candidates", color: COLORS.green },
                 { icon: "📝", value: applications.length, label: "Total applications", color: COLORS.navy },
                 { icon: "✅", value: hiredApps.length, label: "Hired", color: COLORS.green },
                 { icon: "🔒", value: closedPositions.length, label: "Closed positions", color: COLORS.gray400 },
@@ -1337,17 +1376,17 @@ export default function App() {
               {/* Offices */}
               <div style={{ background: COLORS.white, borderRadius: 16, border: `1.5px solid ${COLORS.gray200}`, overflow: "hidden" }}>
                 <div style={{ background: COLORS.navy, padding: "14px 18px" }}>
-                  <span style={{ fontWeight: 800, fontSize: 15, color: COLORS.white }}>🏥 Offices ({allOffices.length})</span>
+                  <span style={{ fontWeight: 800, fontSize: 15, color: COLORS.white }}>🏥 Offices ({officeProfiles.length})</span>
                 </div>
                 <div style={{ maxHeight: 300, overflowY: "auto" }}>
-                  {allOffices.length === 0 && <div style={{ padding: "2rem", textAlign: "center", color: COLORS.gray400, fontSize: 13 }}>No offices yet</div>}
-                  {allOffices.map(office => {
-                    const officePositions = positions.filter(p => p.officeId === office.id);
-                    const officeApps = applications.filter(a => a.officeId === office.id);
+                  {officeProfiles.length === 0 && <div style={{ padding: "2rem", textAlign: "center", color: COLORS.gray400, fontSize: 13 }}>No offices yet</div>}
+                  {officeProfiles.map(office => {
+                    const officePositions = positions.filter(p => p.officeId === office.uid);
+                    const officeApps = applications.filter(a => a.officeId === office.uid);
                     return (
-                      <div key={office.id} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}` }}>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: COLORS.navy }}>{office.name}</div>
-                        <div style={{ fontSize: 11, color: COLORS.gray400 }}>{office.email}</div>
+                      <div key={office.uid} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}` }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: COLORS.navy }}>{office.office || office.name}</div>
+                        <div style={{ fontSize: 11, color: COLORS.gray400 }}>{office.name} · {office.email}</div>
                         {office.address && <div style={{ fontSize: 11, color: COLORS.gray600, marginTop: 1 }}>📍 {office.address}</div>}
                         {office.phone && <div style={{ fontSize: 11, color: COLORS.gray600, marginTop: 1 }}>📞 {office.phone}</div>}
                         <div style={{ fontSize: 11, color: COLORS.teal, marginTop: 2 }}>{officePositions.length} positions · {officeApps.length} applicants · {officeApps.filter(a => a.status === "hired").length} hired</div>
@@ -1360,17 +1399,17 @@ export default function App() {
               {/* Candidates */}
               <div style={{ background: COLORS.white, borderRadius: 16, border: `1.5px solid ${COLORS.gray200}`, overflow: "hidden" }}>
                 <div style={{ background: COLORS.navy, padding: "14px 18px" }}>
-                  <span style={{ fontWeight: 800, fontSize: 15, color: COLORS.white }}>👥 Candidates ({allApplicants.length})</span>
+                  <span style={{ fontWeight: 800, fontSize: 15, color: COLORS.white }}>👥 Candidates ({candidateProfiles.length})</span>
                 </div>
                 <div style={{ maxHeight: 300, overflowY: "auto" }}>
-                  {allApplicants.length === 0 && <div style={{ padding: "2rem", textAlign: "center", color: COLORS.gray400, fontSize: 13 }}>No candidates yet</div>}
-                  {allApplicants.map(applicant => {
-                    const appCount = applications.filter(a => a.applicantId === applicant.id).length;
-                    const hired = applications.filter(a => a.applicantId === applicant.id && a.status === "hired").length;
+                  {candidateProfiles.length === 0 && <div style={{ padding: "2rem", textAlign: "center", color: COLORS.gray400, fontSize: 13 }}>No candidates yet</div>}
+                  {candidateProfiles.map(candidate => {
+                    const appCount = applications.filter(a => a.applicantId === candidate.uid).length;
+                    const hired = applications.filter(a => a.applicantId === candidate.uid && a.status === "hired").length;
                     return (
-                      <div key={applicant.id} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}` }}>
-                        <div style={{ fontWeight: 600, fontSize: 13, color: COLORS.navy }}>{applicant.name}</div>
-                        <div style={{ fontSize: 11, color: COLORS.gray400 }}>{applicant.email} · {applicant.role}</div>
+                      <div key={candidate.uid} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}` }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: COLORS.navy }}>{candidate.name}</div>
+                        <div style={{ fontSize: 11, color: COLORS.gray400 }}>{candidate.email} · {candidate.role} · <span style={{ fontWeight: 600, color: candidate.userType === "provider" ? COLORS.amber : COLORS.blue }}>{candidate.userType}</span></div>
                         <div style={{ fontSize: 11, color: COLORS.teal, marginTop: 2 }}>{appCount} application{appCount !== 1 ? "s" : ""}{hired > 0 ? ` · ${hired} hired` : ""}</div>
                       </div>
                     );

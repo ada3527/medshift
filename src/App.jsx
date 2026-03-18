@@ -43,6 +43,7 @@ const COLORS = {
 
 const WORKER_URL = "https://medshift-ai.ada3527.workers.dev";
 const PAYPAL_CLIENT_ID = "AemJL8NuAPnEF4MTbqnsZvcuUDP7YQh1_6f-uqdzBJtYBbdWYu0Op7J7QLa_uG4pu7uCNlr92y3qrFAQ";
+const ADMIN_EMAIL = "ada3527@gmail.com";
 
 const SHIFT_META = {
   temporary: { label: "Temp / Fill-in", bg: COLORS.amberLight, color: COLORS.amber },
@@ -237,6 +238,9 @@ export default function App() {
   const [publicDetailPos, setPublicDetailPos] = useState(null);
   const [dashDetailPos, setDashDetailPos] = useState(null);
   const [editingPos, setEditingPos] = useState(null);
+  const [landingSearch, setLandingSearch] = useState("");
+  const [landingType, setLandingType] = useState("all");
+  const [landingShift, setLandingShift] = useState("all");
   const [editName, setEditName] = useState("");
   const [editOffice, setEditOffice] = useState("");
   const [editRole, setEditRole] = useState("Dental Assistant");
@@ -488,71 +492,122 @@ export default function App() {
       {/* Positions */}
       <div style={{ background: COLORS.cream, minHeight: "60vh", padding: "2.5rem 1.5rem" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "1.5rem", flexWrap: "wrap", gap: 8 }}>
-            <h2 style={{ fontWeight: 800, fontSize: 20, color: COLORS.navy }}>Open positions — Support Staff</h2>
-            <span style={{ fontSize: 13, color: COLORS.gray400 }}>{positions.filter(p => p.status === "active" && p.positionLevel !== "provider").length} available · Sign up to apply</span>
+
+          {/* Search + filters */}
+          <div style={{ background: COLORS.white, borderRadius: 14, padding: "1rem 1.25rem", marginBottom: "1.5rem", boxShadow: "0 2px 8px rgba(0,0,0,0.05)", border: `1.5px solid ${COLORS.gray200}` }}>
+            <div style={{ position: "relative", marginBottom: 10 }}>
+              <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: COLORS.gray400, fontSize: 16 }}>🔍</span>
+              <input value={landingSearch} onChange={e => setLandingSearch(e.target.value)} placeholder="Search by role, office, or location…" style={{ paddingLeft: 40, width: "100%", boxSizing: "border-box", background: COLORS.gray50 }} />
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {[["all", "All types"], ["dental", "🦷 Dental"], ["medical", "🩺 Medical"]].map(([v, l]) => (
+                <button key={v} onClick={() => setLandingType(v)} style={{ fontSize: 12, padding: "5px 12px", borderRadius: 20, background: landingType === v ? COLORS.teal : COLORS.gray100, color: landingType === v ? COLORS.white : COLORS.gray600, border: "none", fontWeight: 500, cursor: "pointer" }}>{l}</button>
+              ))}
+              <div style={{ width: 1, background: COLORS.gray200, margin: "0 2px" }} />
+              {[["all", "All shifts"], ["temporary", "Temp"], ["part-time", "Part-time"], ["full-time", "Full-time"]].map(([v, l]) => (
+                <button key={v} onClick={() => setLandingShift(v)} style={{ fontSize: 12, padding: "5px 12px", borderRadius: 20, background: landingShift === v ? COLORS.navy : COLORS.gray100, color: landingShift === v ? COLORS.white : COLORS.gray600, border: "none", fontWeight: 500, cursor: "pointer" }}>{l}</button>
+              ))}
+              {(landingSearch || landingType !== "all" || landingShift !== "all") && (
+                <button onClick={() => { setLandingSearch(""); setLandingType("all"); setLandingShift("all"); }} style={{ fontSize: 12, padding: "5px 12px", borderRadius: 20, background: COLORS.redLight, color: COLORS.red, border: "none", fontWeight: 600, cursor: "pointer" }}>✕ Clear</button>
+              )}
+            </div>
           </div>
 
-          {positions.filter(p => p.status === "active" && p.positionLevel !== "provider").length === 0 && (
-            <div style={{ textAlign: "center", padding: "4rem 2rem", background: COLORS.white, borderRadius: 16, border: `1.5px dashed ${COLORS.gray200}` }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>📋</div>
-              <div style={{ fontWeight: 700, color: COLORS.navy, marginBottom: 6 }}>No positions yet</div>
-              <div style={{ color: COLORS.gray400, fontSize: 14 }}>Be the first — sign up and post a position</div>
-            </div>
-          )}
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "start" }}>
-            {[
-              { key: "dental", label: "🦷 Dental", positions: positions.filter(p => p.status === "active" && p.positionLevel !== "provider" && p.practiceType === "dental") },
-              { key: "medical", label: "🩺 Medical", positions: positions.filter(p => p.status === "active" && p.positionLevel !== "provider" && p.practiceType === "medical") },
-            ].map(cat => (
-              <div key={cat.key} style={{ background: COLORS.white, borderRadius: 16, border: `1.5px solid ${COLORS.gray200}`, overflow: "hidden" }}>
-                <div style={{ background: COLORS.navy, padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}>
-                  <h2 style={{ fontWeight: 800, fontSize: 16, color: COLORS.white, margin: 0 }}>{cat.label}</h2>
-                  <span style={{ fontSize: 11, fontWeight: 700, background: COLORS.teal, color: COLORS.white, padding: "2px 10px", borderRadius: 20 }}>{cat.positions.length} open</span>
-                </div>
-                <div style={{ padding: "14px" }}>
-                  {cat.positions.length === 0 && (
-                    <div style={{ textAlign: "center", padding: "2rem 1rem", color: COLORS.gray400, fontSize: 13 }}>No open positions</div>
-                  )}
-                  {["temporary", "part-time", "full-time"].map(shiftType => {
-                    const group = cat.positions.filter(p => p.shiftType === shiftType);
-                    if (group.length === 0) return null;
-                    const sm = SHIFT_META[shiftType];
+          {(() => {
+            const base = positions.filter(p => p.status === "active" && p.positionLevel !== "provider");
+            const filtered = base.filter(p => {
+              if (landingType !== "all" && p.practiceType !== landingType) return false;
+              if (landingShift !== "all" && p.shiftType !== landingShift) return false;
+              if (landingSearch.trim()) {
+                const q = landingSearch.toLowerCase();
+                return [p.role, p.officeName, p.location, p.description].some(f => (f || "").toLowerCase().includes(q));
+              }
+              return true;
+            });
+            const isFiltering = landingSearch || landingType !== "all" || landingShift !== "all";
+            if (filtered.length === 0) return (
+              <div style={{ textAlign: "center", padding: "4rem 2rem", background: COLORS.white, borderRadius: 16, border: `1.5px dashed ${COLORS.gray200}` }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>{isFiltering ? "🔍" : "📋"}</div>
+                <div style={{ fontWeight: 700, color: COLORS.navy, marginBottom: 6 }}>{isFiltering ? "No matching positions" : "No positions yet"}</div>
+                <div style={{ color: COLORS.gray400, fontSize: 14 }}>{isFiltering ? "Try different filters or clear your search" : "Be the first — sign up and post a position"}</div>
+              </div>
+            );
+            if (isFiltering) return (
+              <div>
+                <div style={{ fontSize: 13, color: COLORS.gray400, marginBottom: "1rem" }}>{filtered.length} result{filtered.length !== 1 ? "s" : ""}</div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
+                  {filtered.map((pos, i) => {
+                    const sm = SHIFT_META[pos.shiftType] || {};
                     return (
-                      <div key={shiftType} style={{ marginBottom: "1rem" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 20, background: sm.bg, color: sm.color }}>{sm.label}</span>
-                          <span style={{ fontSize: 11, color: COLORS.gray400 }}>{group.length} position{group.length > 1 ? "s" : ""}</span>
+                      <div key={pos.id} className="fade-up" style={{ animationDelay: `${i * 0.04}s`, background: COLORS.white, borderRadius: 14, padding: "1.1rem 1.25rem", border: `1.5px solid ${COLORS.gray200}`, cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
+                        onClick={() => setPublicDetailPos(pos)}
+                        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: COLORS.navy }}>{pos.role}</div>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: sm.bg, color: sm.color, flexShrink: 0, marginLeft: 8 }}>{sm.label}</span>
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {group.map((pos, i) => (
-                            <div key={pos.id} className="fade-up" style={{ animationDelay: `${i * 0.04}s`, background: COLORS.cream, borderRadius: 12, padding: "12px 14px", border: `1.5px solid ${COLORS.gray200}`, cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
-                              onClick={() => setPublicDetailPos(pos)}
-                              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.08)"; }}
-                              onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
-                              <div style={{ fontWeight: 700, fontSize: 14, color: COLORS.navy, marginBottom: 4 }}>{pos.role}</div>
-                              <div style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600, marginBottom: 6 }}>{pos.officeName} · {pos.location}</div>
-                              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                                <Chip>📅 {pos.date}</Chip>
-                                <Chip>💰 {pos.pay}</Chip>
-                              </div>
-                              {pos.description && <div style={{ fontSize: 12, color: COLORS.gray600, lineHeight: 1.5, marginBottom: 6, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{pos.description}</div>}
-                              <div style={{ fontSize: 11, color: COLORS.teal, fontWeight: 600 }}>View details →</div>
-                            </div>
-                          ))}
+                        <div style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600, marginBottom: 8 }}>{pos.officeName} · {pos.location}</div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                          <Chip>📅 {pos.date}</Chip><Chip>💰 {pos.pay}</Chip>
                         </div>
+                        <div style={{ fontSize: 11, color: COLORS.teal, fontWeight: 600 }}>View details →</div>
                       </div>
                     );
                   })}
                 </div>
               </div>
-            ))}
-          </div>
+            );
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "start" }}>
+                {[
+                  { key: "dental", label: "🦷 Dental", positions: filtered.filter(p => p.practiceType === "dental") },
+                  { key: "medical", label: "🩺 Medical", positions: filtered.filter(p => p.practiceType === "medical") },
+                ].map(cat => (
+                  <div key={cat.key} style={{ background: COLORS.white, borderRadius: 16, border: `1.5px solid ${COLORS.gray200}`, overflow: "hidden" }}>
+                    <div style={{ background: COLORS.navy, padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}>
+                      <h2 style={{ fontWeight: 800, fontSize: 16, color: COLORS.white, margin: 0 }}>{cat.label}</h2>
+                      <span style={{ fontSize: 11, fontWeight: 700, background: COLORS.teal, color: COLORS.white, padding: "2px 10px", borderRadius: 20 }}>{cat.positions.length} open</span>
+                    </div>
+                    <div style={{ padding: "14px" }}>
+                      {cat.positions.length === 0 && <div style={{ textAlign: "center", padding: "2rem 1rem", color: COLORS.gray400, fontSize: 13 }}>No open positions</div>}
+                      {["temporary", "part-time", "full-time"].map(shiftType => {
+                        const group = cat.positions.filter(p => p.shiftType === shiftType);
+                        if (group.length === 0) return null;
+                        const sm = SHIFT_META[shiftType];
+                        return (
+                          <div key={shiftType} style={{ marginBottom: "1rem" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 10px", borderRadius: 20, background: sm.bg, color: sm.color }}>{sm.label}</span>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              {group.map((pos, i) => (
+                                <div key={pos.id} className="fade-up" style={{ background: COLORS.cream, borderRadius: 12, padding: "12px 14px", border: `1.5px solid ${COLORS.gray200}`, cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
+                                  onClick={() => setPublicDetailPos(pos)}
+                                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.08)"; }}
+                                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
+                                  <div style={{ fontWeight: 700, fontSize: 14, color: COLORS.navy, marginBottom: 4 }}>{pos.role}</div>
+                                  <div style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600, marginBottom: 6 }}>{pos.officeName} · {pos.location}</div>
+                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
+                                    <Chip>📅 {pos.date}</Chip><Chip>💰 {pos.pay}</Chip>
+                                  </div>
+                                  <div style={{ fontSize: 11, color: COLORS.teal, fontWeight: 600 }}>View details →</div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
-      {/* Footer CTA */}
+            {/* Footer CTA */}
       <div style={{ background: COLORS.navy, padding: "3rem 1.5rem", textAlign: "center" }}>
         <h2 style={{ fontFamily: "'DM Serif Display', serif", color: COLORS.white, fontSize: "1.8rem", marginBottom: "1rem" }}>Ready to get started?</h2>
         <p style={{ color: "rgba(255,255,255,0.5)", marginBottom: "1.5rem", fontSize: 15 }}>It's free to sign up — for offices and assistants alike.</p>
@@ -768,6 +823,9 @@ export default function App() {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          {authUser?.email === ADMIN_EMAIL && (
+            <button onClick={() => setScreen("admin")} style={{ fontSize: 12, background: COLORS.amber, border: "none", color: COLORS.white, padding: "6px 12px", borderRadius: 8, fontWeight: 700 }}>⚙️ Admin</button>
+          )}
           <button onClick={() => setScreen("dashboard")} style={{ fontSize: 12, background: "rgba(255,255,255,0.1)", border: "none", color: "rgba(255,255,255,0.7)", padding: "6px 12px", borderRadius: 8 }}>← All listings</button>
           <button onClick={loadData} style={{ fontSize: 12, background: "rgba(255,255,255,0.1)", border: "none", color: "rgba(255,255,255,0.7)", padding: "6px 12px", borderRadius: 8 }}>↻ Refresh</button>
           <button onClick={() => goToProfile()} style={{ fontSize: 12, background: "rgba(255,255,255,0.1)", border: "none", color: "rgba(255,255,255,0.7)", padding: "6px 12px", borderRadius: 8 }}>👤 My Account</button>
@@ -1127,6 +1185,149 @@ export default function App() {
             <div style={{ fontWeight: 700, fontSize: 14, color: COLORS.red, marginBottom: 6 }}>Sign out</div>
             <div style={{ fontSize: 13, color: COLORS.gray400, marginBottom: 14 }}>You can log back in anytime with your email and password.</div>
             <button onClick={handleSignOut} style={{ background: COLORS.redLight, color: COLORS.red, border: "none", padding: "10px 20px", borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Sign out of MedShift</button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Admin Dashboard ──────────────────────────────────────────────────────────
+  if (screen === "admin") {
+    if (authUser?.email !== ADMIN_EMAIL) return null;
+
+    const allOffices = positions.reduce((acc, p) => { if (!acc.find(o => o.id === p.officeId)) acc.push({ id: p.officeId, name: p.officeName, email: p.officeEmail }); return acc; }, []);
+    const allApplicants = applications.reduce((acc, a) => { if (!acc.find(x => x.id === a.applicantId)) acc.push({ id: a.applicantId, name: a.applicantName, email: a.applicantEmail, role: a.applicantRole }); return acc; }, []);
+    const activePositions = positions.filter(p => p.status === "active");
+    const closedPositions = positions.filter(p => p.status === "closed");
+    const hiredApps = applications.filter(a => a.status === "hired");
+
+    return (
+      <>
+        <GlobalStyles />
+        <Toast {...toast} />
+        <div style={{ background: COLORS.navy, position: "sticky", top: 0, zIndex: 10 }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: 60 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 34, height: 34, borderRadius: 10, background: COLORS.amber, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚙️</div>
+              <div>
+                <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 16 }}>MedShift Admin</span>
+                <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginLeft: 10 }}>Internal dashboard</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={loadData} style={{ fontSize: 12, background: "rgba(255,255,255,0.1)", border: "none", color: "rgba(255,255,255,0.7)", padding: "6px 12px", borderRadius: 8 }}>↻ Refresh</button>
+              <button onClick={() => setScreen("dashboard")} style={{ fontSize: 12, background: "rgba(255,255,255,0.1)", border: "none", color: "rgba(255,255,255,0.7)", padding: "6px 12px", borderRadius: 8 }}>← Back</button>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ background: COLORS.cream, minHeight: "100vh", padding: "2rem 1.5rem" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+
+            {/* Stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 14, marginBottom: "2rem" }}>
+              {[
+                { icon: "📋", value: activePositions.length, label: "Active positions", color: COLORS.teal },
+                { icon: "🏥", value: allOffices.length, label: "Offices", color: COLORS.blue },
+                { icon: "👥", value: allApplicants.length, label: "Candidates", color: COLORS.green },
+                { icon: "📝", value: applications.length, label: "Total applications", color: COLORS.navy },
+                { icon: "✅", value: hiredApps.length, label: "Hired", color: COLORS.green },
+                { icon: "🔒", value: closedPositions.length, label: "Closed positions", color: COLORS.gray400 },
+              ].map(({ icon, value, label, color }) => (
+                <div key={label} style={{ background: COLORS.white, borderRadius: 14, padding: "1.1rem 1.25rem", border: `1.5px solid ${COLORS.gray200}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                  <div style={{ fontSize: 22, marginBottom: 6 }}>{icon}</div>
+                  <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1 }}>{value}</div>
+                  <div style={{ fontSize: 12, color: COLORS.gray400, fontWeight: 500, marginTop: 4 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: "2rem" }}>
+
+              {/* All Positions */}
+              <div style={{ background: COLORS.white, borderRadius: 16, border: `1.5px solid ${COLORS.gray200}`, overflow: "hidden" }}>
+                <div style={{ background: COLORS.navy, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontWeight: 800, fontSize: 15, color: COLORS.white }}>📋 All Positions ({positions.length})</span>
+                </div>
+                <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                  {positions.length === 0 && <div style={{ padding: "2rem", textAlign: "center", color: COLORS.gray400, fontSize: 13 }}>No positions yet</div>}
+                  {[...positions].sort((a, b) => new Date(b.postedAt) - new Date(a.postedAt)).map(pos => (
+                    <div key={pos.id} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: COLORS.navy }}>{pos.role}</div>
+                        <div style={{ fontSize: 11, color: COLORS.gray400 }}>{pos.officeName} · {pos.location}</div>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: pos.status === "active" ? COLORS.greenLight : COLORS.gray100, color: pos.status === "active" ? COLORS.green : COLORS.gray400 }}>{pos.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* All Applications */}
+              <div style={{ background: COLORS.white, borderRadius: 16, border: `1.5px solid ${COLORS.gray200}`, overflow: "hidden" }}>
+                <div style={{ background: COLORS.navy, padding: "14px 18px" }}>
+                  <span style={{ fontWeight: 800, fontSize: 15, color: COLORS.white }}>📝 All Applications ({applications.length})</span>
+                </div>
+                <div style={{ maxHeight: 400, overflowY: "auto" }}>
+                  {applications.length === 0 && <div style={{ padding: "2rem", textAlign: "center", color: COLORS.gray400, fontSize: 13 }}>No applications yet</div>}
+                  {[...applications].sort((a, b) => new Date(b.appliedAt) - new Date(a.appliedAt)).map(app => (
+                    <div key={app.id} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: COLORS.navy }}>{app.applicantName}</div>
+                        <div style={{ fontSize: 11, color: COLORS.gray400 }}>{app.positionRole} at {app.officeName}</div>
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: app.status === "hired" ? COLORS.greenLight : app.status === "declined" ? COLORS.redLight : COLORS.amberLight, color: app.status === "hired" ? COLORS.green : app.status === "declined" ? COLORS.red : COLORS.amber }}>{app.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+
+              {/* Offices */}
+              <div style={{ background: COLORS.white, borderRadius: 16, border: `1.5px solid ${COLORS.gray200}`, overflow: "hidden" }}>
+                <div style={{ background: COLORS.navy, padding: "14px 18px" }}>
+                  <span style={{ fontWeight: 800, fontSize: 15, color: COLORS.white }}>🏥 Offices ({allOffices.length})</span>
+                </div>
+                <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                  {allOffices.length === 0 && <div style={{ padding: "2rem", textAlign: "center", color: COLORS.gray400, fontSize: 13 }}>No offices yet</div>}
+                  {allOffices.map(office => {
+                    const officePositions = positions.filter(p => p.officeId === office.id);
+                    const officeApps = applications.filter(a => a.officeId === office.id);
+                    return (
+                      <div key={office.id} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}` }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: COLORS.navy }}>{office.name}</div>
+                        <div style={{ fontSize: 11, color: COLORS.gray400 }}>{office.email}</div>
+                        <div style={{ fontSize: 11, color: COLORS.teal, marginTop: 2 }}>{officePositions.length} positions · {officeApps.length} applicants · {officeApps.filter(a => a.status === "hired").length} hired</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Candidates */}
+              <div style={{ background: COLORS.white, borderRadius: 16, border: `1.5px solid ${COLORS.gray200}`, overflow: "hidden" }}>
+                <div style={{ background: COLORS.navy, padding: "14px 18px" }}>
+                  <span style={{ fontWeight: 800, fontSize: 15, color: COLORS.white }}>👥 Candidates ({allApplicants.length})</span>
+                </div>
+                <div style={{ maxHeight: 300, overflowY: "auto" }}>
+                  {allApplicants.length === 0 && <div style={{ padding: "2rem", textAlign: "center", color: COLORS.gray400, fontSize: 13 }}>No candidates yet</div>}
+                  {allApplicants.map(applicant => {
+                    const appCount = applications.filter(a => a.applicantId === applicant.id).length;
+                    const hired = applications.filter(a => a.applicantId === applicant.id && a.status === "hired").length;
+                    return (
+                      <div key={applicant.id} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}` }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, color: COLORS.navy }}>{applicant.name}</div>
+                        <div style={{ fontSize: 11, color: COLORS.gray400 }}>{applicant.email} · {applicant.role}</div>
+                        <div style={{ fontSize: 11, color: COLORS.teal, marginTop: 2 }}>{appCount} application{appCount !== 1 ? "s" : ""}{hired > 0 ? ` · ${hired} hired` : ""}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </>

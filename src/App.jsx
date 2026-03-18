@@ -1369,8 +1369,6 @@ export default function App() {
           </div>
 
           {/* Plan banner */}
-
-    return (
           <div style={{ background: `linear-gradient(135deg, ${COLORS.navy} 0%, #0a3352 100%)`, borderRadius: 16, padding: "1.25rem 1.5rem", marginBottom: "1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", boxShadow: "0 4px 16px rgba(13,33,55,0.15)" }}>
             <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1406,8 +1404,8 @@ export default function App() {
               <h2 style={{ fontWeight: 800, fontSize: 18, color: COLORS.navy }}>Your positions</h2>
               <p style={{ color: COLORS.gray400, fontSize: 13, marginTop: 2 }}>{myPositions.filter(p => p.status === "active").length} active · {myPositions.filter(p => p.status === "closed").length} closed</p>
             </div>
-            <button className={atPositionLimit && postingCredits < 1 ? "" : "primary"} onClick={() => atPositionLimit && postingCredits < 1 ? setShowUpgrade("posting") : setShowPost(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px", ...(atPositionLimit && postingCredits < 1 ? { background: COLORS.gray100, color: COLORS.gray400 } : {}) }}>
-              {atPositionLimit && postingCredits < 1 ? `🔒 Buy posting · ${POSTING_PRICE}` : <><span style={{ fontSize: 18, lineHeight: 1 }}>+</span> Post position</>}
+            <button className="primary" onClick={() => atPositionLimit && postingCredits < 1 ? setShowUpgrade("posting") : setShowPost(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 18px" }}>
+              <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> Post position
             </button>
           </div>
 
@@ -1442,6 +1440,9 @@ export default function App() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 12 }}>
                     <Badge type={pos.shiftType} />
+                    <button onClick={() => setPublicDetailPos(pos)} style={{ fontSize: 11, padding: "4px 10px", background: COLORS.tealLight, color: COLORS.teal, border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
+                      👁 View
+                    </button>
                     {pos.status === "active" && (
                       <button onClick={() => setEditingPos({ ...pos })} style={{ fontSize: 11, padding: "4px 10px", background: COLORS.blueLight, color: COLORS.blue, border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
                         ✏️ Edit
@@ -1581,11 +1582,49 @@ export default function App() {
             <button className="primary" onClick={postPosition} disabled={!postForm.role || loading} style={{ flex: 2, fontWeight: 700 }}>{loading ? "Posting…" : "Post position"}</button>
           </div>
         </Modal>
+
+        {/* View posting modal */}
+        {publicDetailPos && (
+          <Modal open wide title={publicDetailPos.role} onClose={() => setPublicDetailPos(null)}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: COLORS.tealLight, border: `1px solid ${COLORS.teal}33`, borderRadius: 20, padding: "4px 12px", marginBottom: 14 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: COLORS.teal }}>👁 This is how your posting appears to candidates</span>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: COLORS.tealLight, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: 14, color: COLORS.teal }}>{publicDetailPos.officeName?.slice(0,2).toUpperCase()}</div>
+              <div>
+                <div style={{ fontWeight: 700, color: COLORS.teal }}>{publicDetailPos.officeName}</div>
+                <div style={{ fontSize: 12, color: COLORS.gray400 }}>{publicDetailPos.location}</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+              <Badge type={publicDetailPos.shiftType} />
+              <Chip>📅 {publicDetailPos.date}</Chip>
+              {publicDetailPos.time && publicDetailPos.time !== "TBD" && <Chip>🕐 {publicDetailPos.time}</Chip>}
+              <Chip accent>💰 {publicDetailPos.pay}</Chip>
+            </div>
+            {publicDetailPos.description && (
+              <div style={{ marginBottom: 14 }}>
+                <Label>About this position</Label>
+                <div style={{ fontSize: 14, lineHeight: 1.7, color: COLORS.gray600, background: COLORS.gray50, padding: "12px 14px", borderRadius: 10 }}>{publicDetailPos.description}</div>
+              </div>
+            )}
+            {publicDetailPos.requirements && (
+              <div style={{ marginBottom: 16 }}>
+                <Label>Requirements</Label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {publicDetailPos.requirements.split("\n").filter(Boolean).map((r, i) => <Chip key={i} accent>✓ {r}</Chip>)}
+                </div>
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              <button onClick={() => { setPublicDetailPos(null); setEditingPos({ ...publicDetailPos }); }} style={{ flex: 1, fontWeight: 600 }}>✏️ Edit this posting</button>
+              <button onClick={() => setPublicDetailPos(null)} className="primary" style={{ flex: 1, fontWeight: 700 }}>Done</button>
+            </div>
+          </Modal>
+        )}
       </>
     );
   }
-
-  // ── Assistant ─────────────────────────────────────────────────────────────────
   if (screen === "assistant") {
     const myApps = applications.filter(a => a.applicantId === profile.uid);
     const appliedIds = new Set(myApps.map(a => a.positionId));

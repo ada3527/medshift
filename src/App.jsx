@@ -236,6 +236,7 @@ export default function App() {
   const [proCodeError, setProCodeError] = useState("");
   const [publicDetailPos, setPublicDetailPos] = useState(null);
   const [dashDetailPos, setDashDetailPos] = useState(null);
+  const [editingPos, setEditingPos] = useState(null);
   const [editName, setEditName] = useState("");
   const [editOffice, setEditOffice] = useState("");
   const [editRole, setEditRole] = useState("Dental Assistant");
@@ -1316,6 +1317,15 @@ export default function App() {
       showToast("All applicants ranked! Sorted by best match.", "success");
     };
 
+    const savePosition = async () => {
+      if (!editingPos) return;
+      setLoading(true);
+      const next = positions.map(p => p.id === editingPos.id ? { ...editingPos } : p);
+      setPositions(next); await storageSet("ms4:positions", next);
+      setEditingPos(null);
+      showToast("Position updated!", "success"); setLoading(false);
+    };
+
     return (
       <>
         <GlobalStyles />
@@ -1323,6 +1333,32 @@ export default function App() {
         <MessagingModal />
         <PaywallModal />
         <Header title={profile.office} sub={profile.name + " · Office dashboard"} />
+
+        {/* Edit Position Modal */}
+        {editingPos && (
+          <Modal open wide title="Edit position" onClose={() => setEditingPos(null)}>
+            <Field label="Role title"><input value={editingPos.role} onChange={e => setEditingPos(p => ({ ...p, role: e.target.value }))} /></Field>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Practice type"><select value={editingPos.practiceType} onChange={e => setEditingPos(p => ({ ...p, practiceType: e.target.value }))}><option value="dental">🦷 Dental</option><option value="medical">🩺 Medical</option></select></Field>
+              <Field label="Position type"><select value={editingPos.shiftType} onChange={e => setEditingPos(p => ({ ...p, shiftType: e.target.value }))}><option value="temporary">Temp / Fill-in</option><option value="part-time">Part-Time</option><option value="full-time">Full-Time</option></select></Field>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Date / Start"><input value={editingPos.date} onChange={e => setEditingPos(p => ({ ...p, date: e.target.value }))} /></Field>
+              <Field label="Hours"><input value={editingPos.time} onChange={e => setEditingPos(p => ({ ...p, time: e.target.value }))} /></Field>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Field label="Pay rate"><input value={editingPos.pay} onChange={e => setEditingPos(p => ({ ...p, pay: e.target.value }))} /></Field>
+              <Field label="Location"><input value={editingPos.location} onChange={e => setEditingPos(p => ({ ...p, location: e.target.value }))} /></Field>
+            </div>
+            <Field label="Description"><textarea value={editingPos.description || ""} onChange={e => setEditingPos(p => ({ ...p, description: e.target.value }))} /></Field>
+            <Field label="Requirements (one per line)"><textarea value={editingPos.requirements || ""} onChange={e => setEditingPos(p => ({ ...p, requirements: e.target.value }))} /></Field>
+            <Field label="Expiration date (optional)"><input type="date" value={editingPos.expiresAt || ""} onChange={e => setEditingPos(p => ({ ...p, expiresAt: e.target.value }))} min={new Date().toISOString().split("T")[0]} /></Field>
+            <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+              <button onClick={() => setEditingPos(null)} style={{ flex: 1 }}>Cancel</button>
+              <button className="primary" onClick={savePosition} disabled={!editingPos.role || loading} style={{ flex: 2, fontWeight: 700 }}>{loading ? "Saving…" : "Save changes"}</button>
+            </div>
+          </Modal>
+        )}
 
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "1.75rem 1.5rem" }}>
           {/* Stats */}
@@ -1332,20 +1368,37 @@ export default function App() {
             <StatCard value={myApplicants.filter(a => a.status === "hired").length} label="Hired this month" icon="✅" />
           </div>
 
-          {/* Credits banner */}
-          <div style={{ background: COLORS.navy, borderRadius: 14, padding: "12px 18px", marginBottom: "1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", gap: 20 }}>
-              <div>
-                <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Free postings left</div>
-                <div style={{ color: COLORS.white, fontWeight: 800, fontSize: 18 }}>{Math.max(0, FREE_POSITIONS - freePostingsUsed)} <span style={{ fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.4)" }}>of {FREE_POSITIONS}</span></div>
+          {/* Plan banner */}
+
+    return (
+          <div style={{ background: `linear-gradient(135deg, ${COLORS.navy} 0%, #0a3352 100%)`, borderRadius: 16, padding: "1.25rem 1.5rem", marginBottom: "1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap", boxShadow: "0 4px 16px rgba(13,33,55,0.15)" }}>
+            <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: "rgba(11,110,110,0.3)", border: "1px solid rgba(11,110,110,0.5)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>📋</div>
+                <div>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Free postings remaining</div>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                    <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 22 }}>{Math.max(0, FREE_POSITIONS - freePostingsUsed)}</span>
+                    <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 13, fontWeight: 500 }}>/ {FREE_POSITIONS}</span>
+                  </div>
+                </div>
+              </div>
+              {/* Progress bar */}
+              <div style={{ width: 120, height: 6, background: "rgba(255,255,255,0.1)", borderRadius: 10, overflow: "hidden" }}>
+                <div style={{ width: `${(Math.max(0, FREE_POSITIONS - freePostingsUsed) / FREE_POSITIONS) * 100}%`, height: "100%", background: COLORS.teal, borderRadius: 10, transition: "width 0.3s" }} />
               </div>
               {postingCredits > 0 && (
-                <div>
-                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em" }}>Paid credits</div>
-                  <div style={{ color: COLORS.teal, fontWeight: 800, fontSize: 18 }}>{postingCredits} posting{postingCredits !== 1 ? "s" : ""}</div>
+                <div style={{ background: "rgba(11,110,110,0.25)", border: "1px solid rgba(11,110,110,0.4)", borderRadius: 10, padding: "6px 14px" }}>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 1 }}>Paid credits</div>
+                  <div style={{ color: COLORS.teal, fontWeight: 800, fontSize: 16 }}>{postingCredits} posting{postingCredits !== 1 ? "s" : ""}</div>
                 </div>
               )}
             </div>
+            {atPositionLimit && postingCredits < 1 && (
+              <button onClick={() => setShowUpgrade("posting")} style={{ background: COLORS.teal, color: COLORS.white, border: "none", padding: "9px 18px", borderRadius: 10, fontWeight: 700, fontSize: 13, flexShrink: 0, boxShadow: "0 2px 8px rgba(11,110,110,0.4)" }}>
+                + Buy more postings · {POSTING_PRICE}
+              </button>
+            )}
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
@@ -1389,6 +1442,11 @@ export default function App() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 12 }}>
                     <Badge type={pos.shiftType} />
+                    {pos.status === "active" && (
+                      <button onClick={() => setEditingPos({ ...pos })} style={{ fontSize: 11, padding: "4px 10px", background: COLORS.blueLight, color: COLORS.blue, border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
+                        ✏️ Edit
+                      </button>
+                    )}
                     {pos.status === "active" && (
                       <button onClick={() => { if (window.confirm("Mark this position as filled/closed? It will be removed from public listings.")) closePosition(pos.id); }} style={{ fontSize: 11, padding: "4px 10px", background: COLORS.redLight, color: COLORS.red, border: "none", borderRadius: 8, fontWeight: 600, cursor: "pointer" }}>
                         Close

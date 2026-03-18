@@ -222,6 +222,8 @@ export default function App() {
   const [setupRole, setSetupRole] = useState("Dental Assistant");
   const [setupOffice, setSetupOffice] = useState("");
   const [setupLocation, setSetupLocation] = useState("");
+  const [setupAddress, setSetupAddress] = useState("");
+  const [setupPhone, setSetupPhone] = useState("");
   const [showPost, setShowPost] = useState(false);
   const [postForm, setPostForm] = useState({ role: "", practiceType: "dental", shiftType: "temporary", positionLevel: "support", date: "", time: "", pay: "", location: "", expiresAt: "", description: "", requirements: "" });
   const [detailPos, setDetailPos] = useState(null);
@@ -245,6 +247,8 @@ export default function App() {
   const [editOffice, setEditOffice] = useState("");
   const [editRole, setEditRole] = useState("Dental Assistant");
   const [editLocation, setEditLocation] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editPhone, setEditPhone] = useState("");
   const [profileMsg, setProfileMsg] = useState("");
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -300,7 +304,7 @@ export default function App() {
       if (authTab === "signup") {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(cred.user, { displayName });
-        const prof = { uid: cred.user.uid, name: displayName || email.split("@")[0], email: cred.user.email, userType: setupUserType, ...(setupUserType === "office" ? { office: setupOffice, location: setupLocation } : { role: setupRole, location: setupLocation }) };
+        const prof = { uid: cred.user.uid, name: displayName || email.split("@")[0], email: cred.user.email, userType: setupUserType, ...(setupUserType === "office" ? { office: setupOffice, location: setupLocation, address: setupAddress, phone: setupPhone } : { role: setupRole, location: setupLocation }) };
         await storageSet(`ms4:profile:${cred.user.uid}`, prof);
         setProfile(prof);
         if (setupUserType === "office") setScreen("office");
@@ -342,7 +346,7 @@ export default function App() {
 
   const handleSetup = async () => {
     if (!authUser) return;
-    const prof = { uid: authUser.uid, name: authUser.displayName || displayName || authUser.email.split("@")[0], email: authUser.email, userType: setupUserType, ...(setupUserType === "office" ? { office: setupOffice, location: setupLocation } : { role: setupRole, location: setupLocation }) };
+    const prof = { uid: authUser.uid, name: authUser.displayName || displayName || authUser.email.split("@")[0], email: authUser.email, userType: setupUserType, ...(setupUserType === "office" ? { office: setupOffice, location: setupLocation, address: setupAddress, phone: setupPhone } : { role: setupRole, location: setupLocation }) };
     await storageSet(`ms4:profile:${authUser.uid}`, prof);
     setProfile(prof); setScreen(setupUserType === "office" ? "office" : "dashboard");
   };
@@ -352,6 +356,8 @@ export default function App() {
     setEditOffice(profile.office || "");
     setEditRole(profile.role || "Dental Assistant");
     setEditLocation(profile.location || "");
+    setEditAddress(profile.address || "");
+    setEditPhone(profile.phone || "");
     setProfileMsg("");
     setPwMsg({ text: "", ok: false });
     setCurrentPw(""); setNewPw(""); setConfirmPw("");
@@ -514,7 +520,7 @@ export default function App() {
           </div>
 
           {(() => {
-            const base = positions.filter(p => p.status === "active" && p.positionLevel !== "provider");
+            const base = positions.filter(p => p.status === "active" && p.positionLevel !== "provider" && p.status !== "hidden");
             const filtered = base.filter(p => {
               if (landingType !== "all" && p.practiceType !== landingType) return false;
               if (landingShift !== "all" && p.shiftType !== landingShift) return false;
@@ -753,7 +759,9 @@ export default function App() {
                   </div>
                 </Field>
                 {setupUserType === "office"
-                  ? <Field label="Practice name"><input placeholder="Bright Smile Dental" value={setupOffice} onChange={e => setSetupOffice(e.target.value)} /></Field>
+                  ? <><Field label="Practice name"><input placeholder="Bright Smile Dental" value={setupOffice} onChange={e => setSetupOffice(e.target.value)} /></Field>
+                    <Field label="Street address"><input placeholder="123 Main St, Suite 100" value={setupAddress} onChange={e => setSetupAddress(e.target.value)} /></Field>
+                    <Field label="Phone number"><input placeholder="(555) 123-4567" value={setupPhone} onChange={e => setSetupPhone(e.target.value)} /></Field></>
                   : setupUserType === "provider"
                   ? <Field label="Your specialty"><select value={setupRole} onChange={e => setSetupRole(e.target.value)}>{PROVIDER_ROLES.map(r => <option key={r}>{r}</option>)}</select></Field>
                   : <Field label="Your role"><select value={setupRole} onChange={e => setSetupRole(e.target.value)}>{SUPPORT_ROLES.map(r => <option key={r}>{r}</option>)}</select></Field>
@@ -797,7 +805,10 @@ export default function App() {
           </div>
 
           {setupUserType === "office"
-            ? <><Field label="Practice name"><input placeholder="Bright Smile Dental" value={setupOffice} onChange={e => setSetupOffice(e.target.value)} /></Field><Field label="City, State"><input placeholder="Austin, TX" value={setupLocation} onChange={e => setSetupLocation(e.target.value)} /></Field></>
+            ? <><Field label="Practice name"><input placeholder="Bright Smile Dental" value={setupOffice} onChange={e => setSetupOffice(e.target.value)} /></Field>
+               <Field label="Street address"><input placeholder="123 Main St, Suite 100" value={setupAddress} onChange={e => setSetupAddress(e.target.value)} /></Field>
+               <Field label="Phone number"><input placeholder="(555) 123-4567" value={setupPhone} onChange={e => setSetupPhone(e.target.value)} /></Field>
+               <Field label="City, State"><input placeholder="Austin, TX" value={setupLocation} onChange={e => setSetupLocation(e.target.value)} /></Field></>
             : setupUserType === "provider"
             ? <><Field label="Your specialty"><select value={setupRole} onChange={e => setSetupRole(e.target.value)}>{PROVIDER_ROLES.map(r => <option key={r}>{r}</option>)}</select></Field><Field label="City, State"><input placeholder="Austin, TX" value={setupLocation} onChange={e => setSetupLocation(e.target.value)} /></Field></>
             : <><Field label="Your role"><select value={setupRole} onChange={e => setSetupRole(e.target.value)}>{SUPPORT_ROLES.map(r => <option key={r}>{r}</option>)}</select></Field><Field label="City, State"><input placeholder="Austin, TX" value={setupLocation} onChange={e => setSetupLocation(e.target.value)} /></Field></>
@@ -1077,7 +1088,7 @@ export default function App() {
 
     const saveProfile = async () => {
       setSavingProfile(true);
-      const updated = { ...profile, name: editName, location: editLocation, ...(isOffice ? { office: editOffice } : { role: editRole }) };
+      const updated = { ...profile, name: editName, location: editLocation, ...(isOffice ? { office: editOffice, address: editAddress, phone: editPhone } : { role: editRole }) };
       await storageSet(`ms4:profile:${profile.uid}`, updated);
       setProfile(updated);
       if (authUser && editName !== authUser.displayName) await updateProfile(authUser, { displayName: editName });
@@ -1137,7 +1148,9 @@ export default function App() {
               <input value={editName} onChange={e => setEditName(e.target.value)} placeholder="Your name" />
             </Field>
             {isOffice
-              ? <Field label="Practice name"><input value={editOffice} onChange={e => setEditOffice(e.target.value)} placeholder="Bright Smile Dental" /></Field>
+              ? <><Field label="Practice name"><input value={editOffice} onChange={e => setEditOffice(e.target.value)} placeholder="Bright Smile Dental" /></Field>
+                  <Field label="Street address"><input value={editAddress} onChange={e => setEditAddress(e.target.value)} placeholder="123 Main St, Suite 100" /></Field>
+                  <Field label="Phone number"><input value={editPhone} onChange={e => setEditPhone(e.target.value)} placeholder="(555) 123-4567" /></Field></>
               : isProvider
               ? <Field label="Your specialty"><select value={editRole} onChange={e => setEditRole(e.target.value)}>{PROVIDER_ROLES.map(r => <option key={r}>{r}</option>)}</select></Field>
               : <Field label="Your role"><select value={editRole} onChange={e => setEditRole(e.target.value)}>{SUPPORT_ROLES.map(r => <option key={r}>{r}</option>)}</select></Field>
@@ -1195,11 +1208,34 @@ export default function App() {
   if (screen === "admin") {
     if (authUser?.email !== ADMIN_EMAIL) return null;
 
-    const allOffices = positions.reduce((acc, p) => { if (!acc.find(o => o.id === p.officeId)) acc.push({ id: p.officeId, name: p.officeName, email: p.officeEmail }); return acc; }, []);
+    // Build office list — address/phone come from the office's saved profile if they've updated it
+    const allOffices = positions.reduce((acc, p) => {
+      if (!acc.find(o => o.id === p.officeId)) acc.push({ id: p.officeId, name: p.officeName, email: p.officeEmail, address: p.officeAddress || "", phone: p.officePhone || "" });
+      return acc;
+    }, []);
     const allApplicants = applications.reduce((acc, a) => { if (!acc.find(x => x.id === a.applicantId)) acc.push({ id: a.applicantId, name: a.applicantName, email: a.applicantEmail, role: a.applicantRole }); return acc; }, []);
     const activePositions = positions.filter(p => p.status === "active");
     const closedPositions = positions.filter(p => p.status === "closed");
     const hiredApps = applications.filter(a => a.status === "hired");
+
+    const adminHidePos = async (posId) => {
+      const next = positions.map(p => p.id === posId ? { ...p, status: "hidden" } : p);
+      setPositions(next); await storageSet("ms4:positions", next);
+      showToast("Position hidden from all listings.", "success");
+    };
+
+    const adminUnhidePos = async (posId) => {
+      const next = positions.map(p => p.id === posId ? { ...p, status: "active" } : p);
+      setPositions(next); await storageSet("ms4:positions", next);
+      showToast("Position restored to active.", "success");
+    };
+
+    const adminDeletePos = async (posId) => {
+      if (!window.confirm("Permanently delete this position? This cannot be undone.")) return;
+      const next = positions.filter(p => p.id !== posId);
+      setPositions(next); await storageSet("ms4:positions", next);
+      showToast("Position deleted.", "default");
+    };
 
     return (
       <>
@@ -1233,6 +1269,7 @@ export default function App() {
                 { icon: "📝", value: applications.length, label: "Total applications", color: COLORS.navy },
                 { icon: "✅", value: hiredApps.length, label: "Hired", color: COLORS.green },
                 { icon: "🔒", value: closedPositions.length, label: "Closed positions", color: COLORS.gray400 },
+                { icon: "🙈", value: positions.filter(p => p.status === "hidden").length, label: "Hidden by admin", color: COLORS.amber },
               ].map(({ icon, value, label, color }) => (
                 <div key={label} style={{ background: COLORS.white, borderRadius: 14, padding: "1.1rem 1.25rem", border: `1.5px solid ${COLORS.gray200}`, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
                   <div style={{ fontSize: 22, marginBottom: 6 }}>{icon}</div>
@@ -1248,16 +1285,28 @@ export default function App() {
               <div style={{ background: COLORS.white, borderRadius: 16, border: `1.5px solid ${COLORS.gray200}`, overflow: "hidden" }}>
                 <div style={{ background: COLORS.navy, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                   <span style={{ fontWeight: 800, fontSize: 15, color: COLORS.white }}>📋 All Positions ({positions.length})</span>
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{activePositions.length} active · {positions.filter(p => p.status === "hidden").length} hidden</span>
                 </div>
                 <div style={{ maxHeight: 400, overflowY: "auto" }}>
                   {positions.length === 0 && <div style={{ padding: "2rem", textAlign: "center", color: COLORS.gray400, fontSize: 13 }}>No positions yet</div>}
                   {[...positions].sort((a, b) => new Date(b.postedAt) - new Date(a.postedAt)).map(pos => (
-                    <div key={pos.id} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
+                    <div key={pos.id} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, opacity: pos.status === "hidden" ? 0.5 : 1 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: 13, color: COLORS.navy }}>{pos.role}</div>
                         <div style={{ fontSize: 11, color: COLORS.gray400 }}>{pos.officeName} · {pos.location}</div>
                       </div>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: pos.status === "active" ? COLORS.greenLight : COLORS.gray100, color: pos.status === "active" ? COLORS.green : COLORS.gray400 }}>{pos.status}</span>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 20,
+                          background: pos.status === "active" ? COLORS.greenLight : pos.status === "hidden" ? COLORS.amberLight : COLORS.gray100,
+                          color: pos.status === "active" ? COLORS.green : pos.status === "hidden" ? COLORS.amber : COLORS.gray400
+                        }}>{pos.status}</span>
+                        <button onClick={() => setPublicDetailPos(pos)} style={{ fontSize: 11, padding: "3px 8px", background: COLORS.tealLight, color: COLORS.teal, border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer" }}>👁</button>
+                        {pos.status === "hidden"
+                          ? <button onClick={() => adminUnhidePos(pos.id)} style={{ fontSize: 11, padding: "3px 8px", background: COLORS.greenLight, color: COLORS.green, border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer" }}>Restore</button>
+                          : <button onClick={() => adminHidePos(pos.id)} style={{ fontSize: 11, padding: "3px 8px", background: COLORS.amberLight, color: COLORS.amber, border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer" }}>Hide</button>
+                        }
+                        <button onClick={() => adminDeletePos(pos.id)} style={{ fontSize: 11, padding: "3px 8px", background: COLORS.redLight, color: COLORS.red, border: "none", borderRadius: 6, fontWeight: 600, cursor: "pointer" }}>🗑</button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1299,6 +1348,8 @@ export default function App() {
                       <div key={office.id} style={{ padding: "10px 18px", borderBottom: `1px solid ${COLORS.gray100}` }}>
                         <div style={{ fontWeight: 600, fontSize: 13, color: COLORS.navy }}>{office.name}</div>
                         <div style={{ fontSize: 11, color: COLORS.gray400 }}>{office.email}</div>
+                        {office.address && <div style={{ fontSize: 11, color: COLORS.gray600, marginTop: 1 }}>📍 {office.address}</div>}
+                        {office.phone && <div style={{ fontSize: 11, color: COLORS.gray600, marginTop: 1 }}>📞 {office.phone}</div>}
                         <div style={{ fontSize: 11, color: COLORS.teal, marginTop: 2 }}>{officePositions.length} positions · {officeApps.length} applicants · {officeApps.filter(a => a.status === "hired").length} hired</div>
                       </div>
                     );
@@ -1330,11 +1381,35 @@ export default function App() {
 
           </div>
         </div>
+
+        {/* View position modal */}
+        {publicDetailPos && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(13,33,55,0.5)", zIndex: 50, display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => setPublicDetailPos(null)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: COLORS.white, borderRadius: "20px 20px 0 0", width: "100%", maxWidth: 600, maxHeight: "90vh", overflow: "auto", padding: "2rem", boxShadow: "0 -8px 40px rgba(0,0,0,0.15)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: COLORS.navy }}>{publicDetailPos.role}</span>
+                <button onClick={() => setPublicDetailPos(null)} style={{ background: COLORS.gray100, border: "none", width: 32, height: 32, borderRadius: "50%", fontSize: 18, color: COLORS.gray600, cursor: "pointer" }}>×</button>
+              </div>
+              <div style={{ fontSize: 13, color: COLORS.teal, fontWeight: 600, marginBottom: 10 }}>{publicDetailPos.officeName} · {publicDetailPos.location}</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+                <Badge type={publicDetailPos.shiftType} />
+                <Chip>📅 {publicDetailPos.date}</Chip>
+                <Chip accent>💰 {publicDetailPos.pay}</Chip>
+              </div>
+              {publicDetailPos.description && <div style={{ fontSize: 14, lineHeight: 1.7, color: COLORS.gray600, background: COLORS.gray50, padding: "12px 14px", borderRadius: 10, marginBottom: 14 }}>{publicDetailPos.description}</div>}
+              <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+                {publicDetailPos.status === "hidden"
+                  ? <button onClick={() => { adminUnhidePos(publicDetailPos.id); setPublicDetailPos(null); }} style={{ flex: 1, background: COLORS.greenLight, color: COLORS.green, border: "none", borderRadius: 10, padding: "10px", fontWeight: 700, cursor: "pointer" }}>✓ Restore to active</button>
+                  : <button onClick={() => { adminHidePos(publicDetailPos.id); setPublicDetailPos(null); }} style={{ flex: 1, background: COLORS.amberLight, color: COLORS.amber, border: "none", borderRadius: 10, padding: "10px", fontWeight: 700, cursor: "pointer" }}>🙈 Hide from listings</button>
+                }
+                <button onClick={() => { adminDeletePos(publicDetailPos.id); setPublicDetailPos(null); }} style={{ flex: 1, background: COLORS.redLight, color: COLORS.red, border: "none", borderRadius: 10, padding: "10px", fontWeight: 700, cursor: "pointer" }}>🗑 Delete permanently</button>
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   }
-
-  // ── Office ───────────────────────────────────────────────────────────────────
   if (screen === "office") {
     const FREE_POSITIONS = 2;
     const POSTING_PRICE = "$15";
@@ -1468,7 +1543,7 @@ export default function App() {
         setPostingCredits(newCredits);
         await storageSet(`ms4:postcredits:${profile.uid}`, newCredits);
       }
-      const pos = { id: Date.now().toString(), officeId: profile.uid, officeName: profile.office, officeEmail: profile.email, postedBy: profile.name, location: postForm.location || profile.location || "", role: postForm.role, practiceType: postForm.practiceType, shiftType: postForm.shiftType, positionLevel: postForm.positionLevel || "support", date: postForm.date || "Flexible", time: postForm.time || "TBD", pay: postForm.pay || "Negotiable", expiresAt: postForm.expiresAt || null, description: postForm.description, requirements: postForm.requirements, postedAt: new Date().toISOString(), status: "active" };
+      const pos = { id: Date.now().toString(), officeId: profile.uid, officeName: profile.office, officeEmail: profile.email, officeAddress: profile.address || "", officePhone: profile.phone || "", postedBy: profile.name, location: postForm.location || profile.location || "", role: postForm.role, practiceType: postForm.practiceType, shiftType: postForm.shiftType, positionLevel: postForm.positionLevel || "support", date: postForm.date || "Flexible", time: postForm.time || "TBD", pay: postForm.pay || "Negotiable", expiresAt: postForm.expiresAt || null, description: postForm.description, requirements: postForm.requirements, postedAt: new Date().toISOString(), status: "active" };
       const next = [pos, ...positions]; setPositions(next); await storageSet("ms4:positions", next);
       setShowPost(false); setPostForm({ role: "", practiceType: "dental", shiftType: "temporary", positionLevel: "support", date: "", time: "", pay: "", location: "", expiresAt: "", description: "", requirements: "" });
       showToast("Position posted!", "success"); setLoading(false);

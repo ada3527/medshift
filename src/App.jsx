@@ -250,6 +250,7 @@ export default function App() {
   const [analyzingId, setAnalyzingId] = useState(null);
   const [postingCredits, setPostingCredits] = useState(0);
   const [analysisCredits, setAnalysisCredits] = useState(0);
+  const [freeAnalysesUsed, setFreeAnalysesUsed] = useState(0);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [proCode, setProCode] = useState("");
   const [proCodeError, setProCodeError] = useState("");
@@ -301,12 +302,14 @@ export default function App() {
           else setScreen("dashboard");
         } else setScreen("setup");
         loadData();
-        const [postCredits, anlsCredits] = await Promise.all([
+        const [postCredits, anlsCredits, freeAnlsUsed] = await Promise.all([
           storageGet(`ms4:postcredits:${user.uid}`),
-          storageGet(`ms4:analysiscredits:${user.uid}`)
+          storageGet(`ms4:analysiscredits:${user.uid}`),
+          storageGet(`ms4:freeanalyses:${user.uid}`)
         ]);
         setPostingCredits(postCredits || 0);
         setAnalysisCredits(anlsCredits || 0);
+        setFreeAnalysesUsed(freeAnlsUsed || 0);
       } else { setProfile(null); setScreen("landing"); loadData(); }
       setAuthLoading(false);
     });
@@ -1451,6 +1454,7 @@ export default function App() {
   }
   if (screen === "office") {
     const FREE_POSITIONS = 2;
+    const FREE_ANALYSES = 2;
     const POSTING_PRICE = "$15";
     const ANALYSIS_PRICE = "$15";
 
@@ -1599,8 +1603,9 @@ export default function App() {
     const analyzeAllApplicants = async (pos, posApps) => {
       const appsWithResume = posApps.filter(a => a.resumeName);
       if (appsWithResume.length === 0) { showToast("No applicants have uploaded a resume yet.", "error"); return; }
-      if (analysisCredits < 1) { setShowUpgrade("analysis"); return; }
-      if (!window.confirm(`Rank all ${appsWithResume.length} applicant${appsWithResume.length > 1 ? "s" : ""} with resumes? This uses 1 credit ($15).`)) return;
+      const hasFreeLeft = freeAnalysesUsed < FREE_ANALYSES;
+      if (!hasFreeLeft && analysisCredits < 1) { setShowUpgrade("analysis"); return; }
+      if (!window.confirm(`Rank all ${appsWithResume.length} applicant${appsWithResume.length > 1 ? "s" : ""} with resumes?${hasFreeLeft ? ` (Free — ${FREE_ANALYSES - freeAnalysesUsed} of ${FREE_ANALYSES} free uses left)` : " Uses 1 paid credit."}`)) return;
       setAnalyzingId("all-" + pos.id);
       for (const app of appsWithResume) {
         try {
@@ -1624,10 +1629,16 @@ export default function App() {
           setResumeMatches(prev => ({ ...prev, [app.id]: result }));
         } catch (e) { /* skip failed */ }
       }
-      // Deduct 1 credit for the whole position
-      const newCredits = analysisCredits - 1;
-      setAnalysisCredits(newCredits);
-      await storageSet(`ms4:analysiscredits:${profile.uid}`, newCredits);
+      // Deduct from free tier or paid credits
+      if (hasFreeLeft) {
+        const newUsed = freeAnalysesUsed + 1;
+        setFreeAnalysesUsed(newUsed);
+        await storageSet(`ms4:freeanalyses:${profile.uid}`, newUsed);
+      } else {
+        const newCredits = analysisCredits - 1;
+        setAnalysisCredits(newCredits);
+        await storageSet(`ms4:analysiscredits:${profile.uid}`, newCredits);
+      }
       setAnalyzingId(null);
       showToast("All applicants ranked! Sorted by best match.", "success");
     };
@@ -1779,7 +1790,7 @@ export default function App() {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                     <span style={{ fontSize: 12, color: COLORS.gray400, fontWeight: 500 }}>{posApps.length} applicant{posApps.length > 1 ? "s" : ""} · {posApps.filter(a => a.resumeName).length} with resume</span>
                     <button onClick={() => analyzeAllApplicants(pos, posApps)} disabled={analyzingId === "all-" + pos.id} style={{ fontSize: 12, padding: "5px 12px", background: Object.keys(resumeMatches).some(id => posApps.find(a => a.id === id)) ? COLORS.tealLight : "transparent", color: COLORS.teal, border: `1.5px solid ${COLORS.teal}`, borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
-                      {analyzingId === "all-" + pos.id ? "Analyzing all…" : "✨ Rank all applicants"}
+                      {analyzingId === "all-" + pos.id ? "Analyzing all…" : freeAnalysesUsed < FREE_ANALYSES ? `✨ Rank all applicants (${FREE_ANALYSES - freeAnalysesUsed} free left)` : "✨ Rank all applicants"}
                     </button>
                   </div>
                 )}

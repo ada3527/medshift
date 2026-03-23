@@ -247,10 +247,12 @@ export default function App() {
   const [resumeFile, setResumeFile] = useState(null);
   const [resumeData, setResumeData] = useState(null);
   const [aiMatch, setAiMatch] = useState(null);
+  const [resumeMatches, setResumeMatches] = useState({});
   const [analyzingId, setAnalyzingId] = useState(null);
   const [postingCredits, setPostingCredits] = useState(0);
   const [analysisCredits, setAnalysisCredits] = useState(0);
   const [freeAnalysesUsed, setFreeAnalysesUsed] = useState(0);
+  const [resumeMatches, setResumeMatches] = useState({});
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [proCode, setProCode] = useState("");
   const [proCodeError, setProCodeError] = useState("");
@@ -1248,7 +1250,7 @@ export default function App() {
     const closedPositions = positions.filter(p => p.status === "closed");
     const hiredApps = applications.filter(a => a.status === "hired");
 
-    if (allProfiles.length === 0 && screen === "admin") {
+    if (screen === "admin" && allProfiles.length === 0) {
       // Still loading — show spinner
       return (
         <>

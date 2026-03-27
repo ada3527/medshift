@@ -247,12 +247,7 @@ export default function App() {
   const [resumeFile, setResumeFile] = useState(null);
   const [resumeData, setResumeData] = useState(null);
   const [aiMatch, setAiMatch] = useState(null);
-  const [resumeMatches, setResumeMatches] = useState({});
-  const [analyzingId, setAnalyzingId] = useState(null);
   const [postingCredits, setPostingCredits] = useState(0);
-  const [analysisCredits, setAnalysisCredits] = useState(0);
-  const [freeAnalysesUsed, setFreeAnalysesUsed] = useState(0);
-  const [resumeMatches, setResumeMatches] = useState({});
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [proCode, setProCode] = useState("");
   const [proCodeError, setProCodeError] = useState("");
@@ -299,19 +294,13 @@ export default function App() {
         const saved = await storageGet(`ms4:profile:${user.uid}`);
         if (saved) {
           setProfile(saved);
-          if (saved.userType === "office") setScreen("office");
+          if (saved.userType === "office") setScreen("dashboard");
           else if (saved.userType === "provider") setScreen("dashboard");
           else setScreen("dashboard");
         } else setScreen("setup");
         loadData();
-        const [postCredits, anlsCredits, freeAnlsUsed] = await Promise.all([
-          storageGet(`ms4:postcredits:${user.uid}`),
-          storageGet(`ms4:analysiscredits:${user.uid}`),
-          storageGet(`ms4:freeanalyses:${user.uid}`)
-        ]);
+        const postCredits = await storageGet(`ms4:postcredits:${user.uid}`);
         setPostingCredits(postCredits || 0);
-        setAnalysisCredits(anlsCredits || 0);
-        setFreeAnalysesUsed(freeAnlsUsed || 0);
       } else { setProfile(null); setScreen("landing"); loadData(); }
       setAuthLoading(false);
     });
@@ -576,19 +565,20 @@ export default function App() {
                   {filtered.map((pos, i) => {
                     const sm = SHIFT_META[pos.shiftType] || {};
                     return (
-                      <div key={pos.id} className="fade-up" style={{ animationDelay: `${i * 0.04}s`, background: COLORS.white, borderRadius: 14, padding: "1.1rem 1.25rem", border: `1.5px solid ${COLORS.gray200}`, cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
+                      <div key={pos.id} className="fade-up" style={{ animationDelay: `${i * 0.04}s`, background: COLORS.white, borderRadius: 14, padding: "1.25rem", border: `1.5px solid ${COLORS.gray100}`, cursor: "pointer", transition: "all 0.15s", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
                         onClick={() => setPublicDetailPos(pos)}
-                        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.08)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: COLORS.navy }}>{pos.role}</div>
-                          <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: sm.bg, color: sm.color, flexShrink: 0, marginLeft: 8 }}>{sm.label}</span>
+                        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(11,110,110,0.10)"; e.currentTarget.style.borderColor = COLORS.teal; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"; e.currentTarget.style.borderColor = COLORS.gray100; }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                          <div style={{ fontWeight: 800, fontSize: 15, color: COLORS.navy, lineHeight: 1.3 }}>{pos.role}</div>
+                          <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: sm.bg, color: sm.color, flexShrink: 0, marginLeft: 8 }}>{sm.label}</span>
                         </div>
-                        <div style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600, marginBottom: 8 }}>{pos.officeName} · {pos.location}</div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
-                          <Chip>📅 {pos.date}</Chip><Chip>💰 {pos.pay}</Chip>
+                        <div style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600, marginBottom: 10 }}>{pos.officeName} · {pos.location}</div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                          <span style={{ fontSize: 11, background: COLORS.gray50, color: COLORS.gray600, padding: "3px 8px", borderRadius: 8, fontWeight: 500 }}>📅 {pos.date}</span>
+                          <span style={{ fontSize: 11, background: COLORS.greenLight, color: COLORS.green, padding: "3px 8px", borderRadius: 8, fontWeight: 700 }}>💰 {pos.pay}</span>
                         </div>
-                        <div style={{ fontSize: 11, color: COLORS.teal, fontWeight: 600 }}>View details →</div>
+                        <div style={{ fontSize: 12, color: COLORS.teal, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>View details <span style={{ fontSize: 14 }}>→</span></div>
                       </div>
                     );
                   })}
@@ -619,16 +609,19 @@ export default function App() {
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                               {group.map((pos, i) => (
-                                <div key={pos.id} className="fade-up" style={{ background: COLORS.cream, borderRadius: 12, padding: "12px 14px", border: `1.5px solid ${COLORS.gray200}`, cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
+                                <div key={pos.id} className="fade-up" style={{ background: COLORS.white, borderRadius: 12, padding: "14px 16px", border: `1.5px solid ${COLORS.gray100}`, cursor: "pointer", transition: "all 0.15s", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
                                   onClick={() => setPublicDetailPos(pos)}
-                                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.08)"; }}
-                                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
-                                  <div style={{ fontWeight: 700, fontSize: 14, color: COLORS.navy, marginBottom: 4 }}>{pos.role}</div>
-                                  <div style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600, marginBottom: 6 }}>{pos.officeName} · {pos.location}</div>
-                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                                    <Chip>📅 {pos.date}</Chip><Chip>💰 {pos.pay}</Chip>
+                                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(11,110,110,0.10)"; e.currentTarget.style.borderColor = COLORS.teal; }}
+                                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"; e.currentTarget.style.borderColor = COLORS.gray100; }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                                    <div style={{ fontWeight: 800, fontSize: 14, color: COLORS.navy, lineHeight: 1.3 }}>{pos.role}</div>
+                                    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 20, background: sm.bg, color: sm.color, flexShrink: 0, marginLeft: 8 }}>{sm.label}</span>
                                   </div>
-                                  <div style={{ fontSize: 11, color: COLORS.teal, fontWeight: 600 }}>View details →</div>
+                                  <div style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600, marginBottom: 8 }}>{pos.officeName} · {pos.location}</div>
+                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                    <span style={{ fontSize: 11, background: COLORS.gray50, color: COLORS.gray600, padding: "3px 8px", borderRadius: 8, fontWeight: 500 }}>📅 {pos.date}</span>
+                                    <span style={{ fontSize: 11, background: COLORS.greenLight, color: COLORS.green, padding: "3px 8px", borderRadius: 8, fontWeight: 700 }}>💰 {pos.pay}</span>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -982,20 +975,20 @@ export default function App() {
                             {group.map((pos, i) => {
                               const applied = appliedIds.has(pos.id);
                               return (
-                                <div key={pos.id} className="fade-up" style={{ animationDelay: `${i * 0.04}s`, background: COLORS.cream, borderRadius: 12, padding: "12px 14px", border: `1.5px solid ${applied ? COLORS.green : COLORS.gray200}`, cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
+                                <div key={pos.id} className="fade-up" style={{ animationDelay: `${i * 0.04}s`, background: COLORS.white, borderRadius: 12, padding: "14px 16px", border: `1.5px solid ${applied ? COLORS.green : COLORS.gray100}`, cursor: "pointer", transition: "all 0.15s", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
                                   onClick={() => { if (profile.userType === "office") setScreen("office"); else setDashDetailPos(pos); }}
-                                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,0.08)"; }}
-                                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = ""; }}>
-                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-                                    <div style={{ fontWeight: 700, fontSize: 14, color: COLORS.navy, flex: 1, paddingRight: 8 }}>{pos.role}</div>
+                                  onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 6px 20px rgba(11,110,110,0.10)"; e.currentTarget.style.borderColor = applied ? COLORS.green : COLORS.teal; }}
+                                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"; e.currentTarget.style.borderColor = applied ? COLORS.green : COLORS.gray100; }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                                    <div style={{ fontWeight: 800, fontSize: 14, color: COLORS.navy, flex: 1, paddingRight: 8, lineHeight: 1.3 }}>{pos.role}</div>
                                     {applied && <span style={{ fontSize: 10, fontWeight: 700, color: COLORS.green, background: COLORS.greenLight, padding: "2px 8px", borderRadius: 20, flexShrink: 0 }}>✓ Applied</span>}
                                   </div>
-                                  <div style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600, marginBottom: 6 }}>{pos.officeName} · {pos.location}</div>
-                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
-                                    <Chip>📅 {pos.date}</Chip>
-                                    <Chip>💰 {pos.pay}</Chip>
+                                  <div style={{ fontSize: 12, color: COLORS.teal, fontWeight: 600, marginBottom: 8 }}>{pos.officeName} · {pos.location}</div>
+                                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 8 }}>
+                                    <span style={{ fontSize: 11, background: COLORS.gray50, color: COLORS.gray600, padding: "3px 8px", borderRadius: 8, fontWeight: 500 }}>📅 {pos.date}</span>
+                                    <span style={{ fontSize: 11, background: COLORS.greenLight, color: COLORS.green, padding: "3px 8px", borderRadius: 8, fontWeight: 700 }}>💰 {pos.pay}</span>
                                   </div>
-                                  <div style={{ fontSize: 11, color: COLORS.teal, fontWeight: 600 }}>
+                                  <div style={{ fontSize: 11, color: COLORS.teal, fontWeight: 700 }}>
                                     {profile.userType === "office" ? "View applicants →" : (applied ? "✓ Applied" : "View & apply →")}
                                   </div>
                                 </div>
@@ -1456,9 +1449,7 @@ export default function App() {
   }
   if (screen === "office") {
     const FREE_POSITIONS = 2;
-    const FREE_ANALYSES = 2;
     const POSTING_PRICE = "$15";
-    const ANALYSIS_PRICE = "$15";
 
     const myPositions = positions.filter(p => p.officeId === profile.uid);
     const myApplicants = applications.filter(a => a.officeId === profile.uid);
@@ -1474,9 +1465,9 @@ export default function App() {
       setPositions(next);
     }
     const PaywallModal = () => {
-      const isPosting = showUpgrade === "posting";
+      const isPosting = true;
       const amount = isPosting ? "15.00" : "15.00";
-      const containerId = isPosting ? "paypal-posting-btn" : "paypal-analysis-btn";
+      const containerId = "paypal-posting-btn";
 
       useEffect(() => {
         if (!showUpgrade) return;
@@ -1492,17 +1483,11 @@ export default function App() {
             }),
             onApprove: async (data, actions) => {
               await actions.order.capture();
-              if (isPosting) {
-                const newCredits = (postingCredits || 0) + 1;
-                setPostingCredits(newCredits);
-                await storageSet(`ms4:postcredits:${profile.uid}`, newCredits);
-              } else {
-                const newCredits = (analysisCredits || 0) + 1;
-                setAnalysisCredits(newCredits);
-                await storageSet(`ms4:analysiscredits:${profile.uid}`, newCredits);
-              }
+              const newCredits = (postingCredits || 0) + 1;
+              setPostingCredits(newCredits);
+              await storageSet(`ms4:postcredits:${profile.uid}`, newCredits);
               setShowUpgrade(false);
-              showToast(isPosting ? "✅ Posting credit added!" : "✅ Analysis credit added!", "success");
+              showToast("✅ Posting credit added!", "success");
             },
             onError: () => showToast("Payment failed — please try again", "error")
           }).render(`#${containerId}`);
@@ -1529,7 +1514,7 @@ export default function App() {
               {isPosting ? "Post an additional position" : "Unlock resume analysis"}
             </div>
             <div style={{ fontSize: 36, fontWeight: 800, color: COLORS.teal }}>${amount}</div>
-            <div style={{ fontSize: 13, color: COLORS.gray400, marginTop: 4 }}>{isPosting ? "one-time · per posting" : "one-time · ranks all applicants for this position"}</div>
+            <div style={{ fontSize: 13, color: COLORS.gray400, marginTop: 4 }}>one-time · per posting</div>
           </div>
 
           <div style={{ background: COLORS.gray50, borderRadius: 12, padding: "1rem 1.25rem", marginBottom: "1.5rem" }}>
@@ -1548,27 +1533,17 @@ export default function App() {
       );
     };
 
-    const redeemCode = async (isPosting) => {
+    const redeemCode = async () => {
       setProCodeError("");
-      // Posting codes: POST-XXXXX, Analysis codes: ANLY-XXXXX
       const code = proCode.trim().toUpperCase();
-      const validPosting = code.startsWith("POST-");
-      const validAnalysis = code.startsWith("ANLY-");
-      if ((isPosting && validPosting) || (!isPosting && validAnalysis)) {
-        if (isPosting) {
-          const newCredits = (postingCredits || 0) + 1;
-          setPostingCredits(newCredits);
-          await storageSet(`ms4:postcredits:${profile.uid}`, newCredits);
-          showToast("✅ Posting credit added!", "success");
-        } else {
-          const newCredits = (analysisCredits || 0) + 1;
-          setAnalysisCredits(newCredits);
-          await storageSet(`ms4:analysiscredits:${profile.uid}`, newCredits);
-          showToast("✅ Analysis credit added!", "success");
-        }
+      if (code.startsWith("POST-")) {
+        const newCredits = (postingCredits || 0) + 1;
+        setPostingCredits(newCredits);
+        await storageSet(`ms4:postcredits:${profile.uid}`, newCredits);
+        showToast("✅ Posting credit added!", "success");
         setShowUpgrade(false); setProCode("");
       } else {
-        setProCodeError(isPosting ? "Invalid posting code — codes start with POST-" : "Invalid analysis code — codes start with ANLY-");
+        setProCodeError("Invalid code — posting codes start with POST-");
       }
     };
 
@@ -1602,48 +1577,6 @@ export default function App() {
       showToast(status === "hired" ? "Hired! Candidate notified." : "Declined.", status === "hired" ? "success" : "default");
     };
 
-    const analyzeAllApplicants = async (pos, posApps) => {
-      const appsWithResume = posApps.filter(a => a.resumeName);
-      if (appsWithResume.length === 0) { showToast("No applicants have uploaded a resume yet.", "error"); return; }
-      const hasFreeLeft = freeAnalysesUsed < FREE_ANALYSES;
-      if (!hasFreeLeft && analysisCredits < 1) { setShowUpgrade("analysis"); return; }
-      if (!window.confirm(`Rank all ${appsWithResume.length} applicant${appsWithResume.length > 1 ? "s" : ""} with resumes?${hasFreeLeft ? ` (Free — ${FREE_ANALYSES - freeAnalysesUsed} of ${FREE_ANALYSES} free uses left)` : " Uses 1 paid credit."}`)) return;
-      setAnalyzingId("all-" + pos.id);
-      for (const app of appsWithResume) {
-        try {
-          const stored = await storageGet(`ms4:resume:${app.id}`);
-          if (!stored) continue;
-          const isPdf = app.resumeName?.toLowerCase().endsWith(".pdf");
-          let messages;
-          if (isPdf) {
-            const base64 = stored.split(",")[1];
-            messages = [{ role: "user", content: [
-              { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
-              { type: "text", text: `Healthcare staffing expert. Analyze resume vs job. JSON only, no markdown.\nJOB: Role=${pos.role}, Type=${pos.practiceType}/${pos.shiftType}, Pay=${pos.pay}, Requirements=${pos.requirements || "None"}, Description=${pos.description || "None"}\n{"score":<1-10>,"verdict":"<Strong match|Good match|Partial match|Weak match>","strengths":["<s1>","<s2>"],"gaps":["<g1>"],"summary":"<2 sentences>"}` }
-            ]}];
-          } else {
-            messages = [{ role: "user", content: `Candidate fit. JSON only.\nCANDIDATE: ${app.applicantName}, ${app.applicantRole}, ${app.applicantLocation}\nJOB: ${pos.role}, ${pos.practiceType}/${pos.shiftType}, pay=${pos.pay}, requirements=${pos.requirements || "None"}\n{"score":<1-10>,"verdict":"<Strong match|Good match|Partial match|Weak match>","strengths":["<s1>"],"gaps":["<g1>"],"summary":"<2 sentences>"}` }];
-          }
-          const res = await fetch(WORKER_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 400, messages }) });
-          const data = await res.json();
-          const text = data.content?.find(b => b.type === "text")?.text || "{}";
-          const result = JSON.parse(text.replace(/```json|```/g, "").trim());
-          setResumeMatches(prev => ({ ...prev, [app.id]: result }));
-        } catch (e) { /* skip failed */ }
-      }
-      // Deduct from free tier or paid credits
-      if (hasFreeLeft) {
-        const newUsed = freeAnalysesUsed + 1;
-        setFreeAnalysesUsed(newUsed);
-        await storageSet(`ms4:freeanalyses:${profile.uid}`, newUsed);
-      } else {
-        const newCredits = analysisCredits - 1;
-        setAnalysisCredits(newCredits);
-        await storageSet(`ms4:analysiscredits:${profile.uid}`, newCredits);
-      }
-      setAnalyzingId(null);
-      showToast("All applicants ranked! Sorted by best match.", "success");
-    };
 
     const savePosition = async () => {
       if (!editingPos) return;
@@ -1788,40 +1721,14 @@ export default function App() {
 
                 {posApps.length === 0 && <div style={{ fontSize: 13, color: COLORS.gray400, fontStyle: "italic" }}>No applicants yet — share your posting to get responses!</div>}
 
-                {posApps.length > 0 && posApps.some(a => a.resumeName) && (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, color: COLORS.gray400, fontWeight: 500 }}>{posApps.length} applicant{posApps.length > 1 ? "s" : ""} · {posApps.filter(a => a.resumeName).length} with resume</span>
-                    <button onClick={() => analyzeAllApplicants(pos, posApps)} disabled={analyzingId === "all-" + pos.id} style={{ fontSize: 12, padding: "5px 12px", background: Object.keys(resumeMatches).some(id => posApps.find(a => a.id === id)) ? COLORS.tealLight : "transparent", color: COLORS.teal, border: `1.5px solid ${COLORS.teal}`, borderRadius: 8, fontWeight: 700, cursor: "pointer" }}>
-                      {analyzingId === "all-" + pos.id ? "Analyzing all…" : freeAnalysesUsed < FREE_ANALYSES ? `✨ Rank all applicants (${FREE_ANALYSES - freeAnalysesUsed} free left)` : "✨ Rank all applicants"}
-                    </button>
-                  </div>
-                )}
 
-                {[...posApps].sort((a, b) => {
-                  const scoreA = resumeMatches[a.id]?.score || 0;
-                  const scoreB = resumeMatches[b.id]?.score || 0;
-                  return scoreB - scoreA;
-                }).map((app, appIndex) => {
-                  const match = resumeMatches[app.id];
-                  const isAnalyzing = analyzingId === app.id;
-                  const hasAnyMatches = posApps.some(a => resumeMatches[a.id]);
-                  const rank = hasAnyMatches ? appIndex + 1 : null;
-                  const verdictColors = {
-                    "Strong match": { bg: COLORS.greenLight, color: COLORS.green },
-                    "Good match": { bg: COLORS.tealLight, color: COLORS.teal },
-                    "Partial match": { bg: COLORS.amberLight, color: COLORS.amber },
-                    "Weak match": { bg: COLORS.redLight, color: COLORS.red },
-                  };
-                  const vc = verdictColors[match?.verdict] || {};
+                {posApps.map((app, appIndex) => {
                   return (
                     <div key={app.id} style={{ borderTop: `1px solid ${COLORS.gray100}` }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0" }}>
                         <Avatar name={app.applicantName} teal />
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            {rank && <span style={{ fontSize: 11, fontWeight: 800, background: rank === 1 ? COLORS.green : rank === 2 ? COLORS.teal : COLORS.gray200, color: rank <= 2 ? COLORS.white : COLORS.gray600, padding: "2px 8px", borderRadius: 20, flexShrink: 0 }}>#{rank}</span>}
-                            <div style={{ fontWeight: 700, fontSize: 14 }}>{app.applicantName}</div>
-                          </div>
+                          <div style={{ fontWeight: 700, fontSize: 14 }}>{app.applicantName}</div>
                           <div style={{ fontSize: 12, color: COLORS.gray400, marginTop: 1 }}>{app.applicantRole} · {app.applicantLocation}</div>
                           {app.message && <div style={{ fontSize: 12, color: COLORS.gray600, marginTop: 4, fontStyle: "italic", background: COLORS.gray50, padding: "4px 10px", borderRadius: 8, borderLeft: `3px solid ${COLORS.teal}` }}>"{app.message}"</div>}
                         </div>
@@ -1844,30 +1751,6 @@ export default function App() {
                           }
                         </div>
                       </div>
-                      {match && (
-                        <div style={{ marginBottom: 12, background: COLORS.gray50, borderRadius: 12, padding: "14px 16px", border: `1px solid ${COLORS.gray200}` }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                            <div style={{ background: COLORS.teal, color: COLORS.white, borderRadius: 10, padding: "4px 12px", fontWeight: 800, fontSize: 16 }}>{match.score}/10</div>
-                            <span style={{ background: vc.bg, color: vc.color, fontWeight: 700, fontSize: 12, padding: "4px 10px", borderRadius: 20 }}>{match.verdict}</span>
-                            <span style={{ fontSize: 12, color: COLORS.gray400, marginLeft: "auto" }}>✨ AI resume analysis</span>
-                          </div>
-                          <div style={{ fontSize: 13, color: COLORS.gray600, lineHeight: 1.6, marginBottom: 10 }}>{match.summary}</div>
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                            {match.strengths?.length > 0 && (
-                              <div>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.green, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5 }}>Strengths</div>
-                                {match.strengths.map((s, i) => <div key={i} style={{ fontSize: 12, color: COLORS.gray600, marginBottom: 3, paddingLeft: 10, borderLeft: `2px solid ${COLORS.green}` }}>✓ {s}</div>)}
-                              </div>
-                            )}
-                            {match.gaps?.length > 0 && (
-                              <div>
-                                <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.amber, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5 }}>Gaps</div>
-                                {match.gaps.map((g, i) => <div key={i} style={{ fontSize: 12, color: COLORS.gray600, marginBottom: 3, paddingLeft: 10, borderLeft: `2px solid ${COLORS.amber}` }}>⚠ {g}</div>)}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   );
                 })}

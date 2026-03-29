@@ -487,9 +487,9 @@ export default function App() {
               Browse open positions for dental and medical support staff. Free to apply — no account needed to browse.
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button onClick={() => { if (profile) setScreen("assistant"); else { setAuthTab("signup"); setScreen("login"); } }}
+              <button onClick={() => document.getElementById("positions-section")?.scrollIntoView({ behavior: "smooth" })}
                 style={{ background: COLORS.teal, color: COLORS.white, border: "none", padding: "9px 18px", borderRadius: 9, fontWeight: 700, fontSize: 13, cursor: "pointer", boxShadow: "0 4px 14px rgba(11,110,110,0.4)" }}>
-                🩺 Find a position
+                🩺 Browse open positions
               </button>
               <button onClick={() => { if (profile) setScreen("office"); else { setAuthTab("signup"); setScreen("login"); } }}
                 style={{ background: "transparent", color: COLORS.white, border: "1.5px solid rgba(255,255,255,0.25)", padding: "9px 18px", borderRadius: 9, fontWeight: 600, fontSize: 13, cursor: "pointer" }}>
@@ -516,7 +516,7 @@ export default function App() {
       </div>
 
       {/* Positions */}
-      <div style={{ background: COLORS.cream, minHeight: "60vh", padding: "2.5rem 1.5rem" }}>
+      <div id="positions-section" style={{ background: COLORS.cream, minHeight: "60vh", padding: "2.5rem 1.5rem" }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
 
           {/* Search + filters */}
@@ -638,13 +638,47 @@ export default function App() {
       </div>
 
             {/* Footer CTA */}
-      <div style={{ background: COLORS.navy, padding: "3rem 1.5rem", textAlign: "center" }}>
-        <h2 style={{ fontFamily: "'DM Serif Display', serif", color: COLORS.white, fontSize: "1.8rem", marginBottom: "1rem" }}>Ready to get started?</h2>
-        <p style={{ color: "rgba(255,255,255,0.5)", marginBottom: "1.5rem", fontSize: 15 }}>It's free to sign up — for offices and assistants alike.</p>
-        <button onClick={() => { setAuthTab("signup"); setScreen("login"); }} style={{ background: COLORS.teal, color: COLORS.white, border: "none", padding: "13px 32px", borderRadius: 12, fontWeight: 700, fontSize: 15 }}>Create your free account →</button>
-        <div style={{ marginTop: 14, padding: "12px 20px", background: "rgba(255,255,255,0.06)", borderRadius: 10, display: "inline-block" }}>
-          <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 13 }}>Are you a doctor or dentist? </span>
-          <button onClick={() => { setAuthTab("login"); setScreen("login"); }} style={{ background: "none", border: "none", color: COLORS.teal, fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0 }}>Log in to see provider positions →</button>
+      <div style={{ background: COLORS.navy, padding: "3rem 1.5rem" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: "2rem" }}>
+
+            {/* Support Staff CTA */}
+            <div style={{ background: "rgba(11,110,110,0.2)", border: "1.5px solid rgba(11,110,110,0.4)", borderRadius: 16, padding: "1.75rem" }}>
+              <div style={{ fontSize: 28, marginBottom: 10 }}>🩺</div>
+              <div style={{ fontWeight: 800, fontSize: 18, color: COLORS.white, marginBottom: 6 }}>Looking for shifts?</div>
+              <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 1.6, marginBottom: 18 }}>
+                Dental assistants, hygienists, front desk, and medical support staff — browse and apply to open positions near you.
+              </div>
+              <button onClick={() => { setAuthTab("signup"); setScreen("login"); }}
+                style={{ background: COLORS.teal, color: COLORS.white, border: "none", padding: "11px 22px", borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: "pointer", width: "100%" }}>
+                Sign up as support staff →
+              </button>
+            </div>
+
+            {/* Provider CTA */}
+            <div style={{ background: "rgba(245,158,11,0.15)", border: "1.5px solid rgba(245,158,11,0.4)", borderRadius: 16, padding: "1.75rem" }}>
+              <div style={{ fontSize: 28, marginBottom: 10 }}>👨‍⚕️</div>
+              <div style={{ fontWeight: 800, fontSize: 18, color: COLORS.white, marginBottom: 6 }}>Doctor or dentist?</div>
+              <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 1.6, marginBottom: 18 }}>
+                Dentists, physicians, specialists and more — find fill-in, part-time, or full-time provider positions. Provider listings are exclusive to logged-in members.
+              </div>
+              <button onClick={() => { setAuthTab("signup"); setScreen("login"); }}
+                style={{ background: COLORS.amber, color: COLORS.white, border: "none", padding: "11px 22px", borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: "pointer", width: "100%" }}>
+                Sign up as a provider →
+              </button>
+            </div>
+          </div>
+
+          {/* Office CTA */}
+          <div style={{ textAlign: "center", padding: "1.5rem", background: "rgba(255,255,255,0.04)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div style={{ color: "rgba(255,255,255,0.6)", fontSize: 14, marginBottom: 10 }}>
+              🏥 Running a dental or medical practice?
+            </div>
+            <button onClick={() => { setAuthTab("signup"); setScreen("login"); }}
+              style={{ background: "transparent", color: COLORS.white, border: "1.5px solid rgba(255,255,255,0.3)", padding: "9px 24px", borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+              Post positions for free →
+            </button>
+          </div>
         </div>
       </div>
 

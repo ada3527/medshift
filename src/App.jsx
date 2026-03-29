@@ -643,10 +643,10 @@ export default function App() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: "2rem" }}>
 
             {/* Support Staff CTA */}
-            <div style={{ background: "rgba(11,110,110,0.2)", border: "1.5px solid rgba(11,110,110,0.4)", borderRadius: 16, padding: "1.75rem" }}>
+            <div style={{ background: "rgba(11,110,110,0.2)", border: "1.5px solid rgba(11,110,110,0.4)", borderRadius: 16, padding: "1.75rem", display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 28, marginBottom: 10 }}>🩺</div>
               <div style={{ fontWeight: 800, fontSize: 18, color: COLORS.white, marginBottom: 6 }}>Looking for shifts?</div>
-              <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 1.6, marginBottom: 18 }}>
+              <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 1.6, marginBottom: 18, flex: 1 }}>
                 Dental assistants, hygienists, front desk, and medical support staff — browse and apply to open positions near you.
               </div>
               <button onClick={() => { setAuthTab("signup"); setScreen("login"); }}
@@ -656,14 +656,14 @@ export default function App() {
             </div>
 
             {/* Provider CTA */}
-            <div style={{ background: "rgba(245,158,11,0.15)", border: "1.5px solid rgba(245,158,11,0.4)", borderRadius: 16, padding: "1.75rem" }}>
+            <div style={{ background: "rgba(37,99,235,0.15)", border: "1.5px solid rgba(37,99,235,0.4)", borderRadius: 16, padding: "1.75rem", display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 28, marginBottom: 10 }}>👨‍⚕️</div>
               <div style={{ fontWeight: 800, fontSize: 18, color: COLORS.white, marginBottom: 6 }}>Doctor or dentist?</div>
-              <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 1.6, marginBottom: 18 }}>
+              <div style={{ color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 1.6, marginBottom: 18, flex: 1 }}>
                 Dentists, physicians, specialists and more — find fill-in, part-time, or full-time provider positions. Provider listings are exclusive to logged-in members.
               </div>
               <button onClick={() => { setAuthTab("signup"); setScreen("login"); }}
-                style={{ background: COLORS.amber, color: COLORS.white, border: "none", padding: "11px 22px", borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: "pointer", width: "100%" }}>
+                style={{ background: COLORS.blue, color: COLORS.white, border: "none", padding: "11px 22px", borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: "pointer", width: "100%" }}>
                 Sign up as a provider →
               </button>
             </div>
@@ -676,7 +676,7 @@ export default function App() {
             </div>
             <button onClick={() => { setAuthTab("signup"); setScreen("login"); }}
               style={{ background: "transparent", color: COLORS.white, border: "1.5px solid rgba(255,255,255,0.3)", padding: "9px 24px", borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-              Post positions for free →
+              Post jobs →
             </button>
           </div>
         </div>

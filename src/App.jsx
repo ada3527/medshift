@@ -681,13 +681,16 @@ export default function App() {
           </div>
 
           {/* Copyright & disclaimer */}
-          <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
-            <p style={{ color: "rgba(255,255,255,0.25)", fontSize: 11, lineHeight: 1.7, maxWidth: 700, margin: "0 auto 8px" }}>
-              <strong style={{ color: "rgba(255,255,255,0.35)" }}>Disclaimer:</strong> MedShift is a job board platform and is not responsible for the accuracy, completeness, or legality of any job postings listed on this site. MedShift does not endorse any employer or candidate, and is not liable for any hiring decisions, employment arrangements, or outcomes resulting from connections made through this platform. Users are solely responsible for verifying credentials and conducting their own due diligence.
-            </p>
-            <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 11, margin: 0 }}>
-              © {new Date().getFullYear()} MedShift. All rights reserved.
-            </p>
+          <div style={{ marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+            <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "1.25rem 1.5rem", marginBottom: "1rem" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Disclaimer</div>
+              <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, lineHeight: 1.8, margin: 0 }}>
+                MedShift is a job board platform and is not responsible for the accuracy, completeness, or legality of any job postings listed on this site. MedShift does not endorse any employer or candidate, and is not liable for any hiring decisions, employment arrangements, or outcomes resulting from connections made through this platform. Users are solely responsible for verifying credentials and conducting their own due diligence.
+              </p>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 12 }}>© {new Date().getFullYear()} MedShift. All rights reserved.</span>
+            </div>
           </div>
         </div>
       </div>

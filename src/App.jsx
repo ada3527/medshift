@@ -358,8 +358,9 @@ export default function App() {
       setAuthError("");
       showToast("Reset email sent — check your inbox!", "success");
     } catch (e) {
+      console.error("Reset email error:", e.code, e.message);
       const msgs = { "auth/invalid-email": "Please enter a valid email.", "auth/user-not-found": "No account found with that email." };
-      setAuthError(msgs[e.code] || "Could not send reset email. Try again.");
+      setAuthError(msgs[e.code] || `Could not send reset email (${e.code}). Try again.`);
     }
     setLoading(false);
   };

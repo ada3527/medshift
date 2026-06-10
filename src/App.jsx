@@ -397,7 +397,7 @@ export default function App() {
     const newMsg = { id: Date.now().toString(), sender: profile.name, text: msgDraft.trim(), ts: new Date().toISOString() };
     const updated = { ...messages, [msgModal.threadId]: [...(messages[msgModal.threadId] || []), newMsg] };
     setMessages(updated); await storageSet("ms4:messages", updated); setMsgDraft("");
-    const r = await sendEmailNotification({ to: msgModal.otherEmail, subject: `New message from ${profile.name} - MedShift`, body: `Hi ${msgModal.otherName}, ${profile.name} sent you a message: "${newMsg.text}". Log into MedShift to reply.` });
+    const r = await sendEmailNotification({ to: msgModal.otherEmail, subject: `New message from ${profile.name} - MedHire`, body: `Hi ${msgModal.otherName}, ${profile.name} sent you a message: "${newMsg.text}". Log into MedHire to reply.` });
     setSendingMsg(false);
     showToast(r.ok ? "Message sent + email delivered" : "Message saved", r.ok ? "success" : "default");
   };
@@ -438,7 +438,7 @@ export default function App() {
       <GlobalStyles />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", flexDirection: "column", gap: 16, background: COLORS.navy }}>
         <div style={{ width: 52, height: 52, borderRadius: "50%", background: COLORS.teal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>⚕️</div>
-        <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, fontWeight: 500 }}>Loading MedShift…</div>
+        <div style={{ color: "rgba(255,255,255,0.5)", fontSize: 14, fontWeight: 500 }}>Loading MedHire…</div>
       </div>
     </>
   );
@@ -454,7 +454,7 @@ export default function App() {
         <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", height: 60 }}>
           <div onClick={() => setScreen("landing")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
             <div style={{ width: 34, height: 34, borderRadius: 10, background: COLORS.teal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚕️</div>
-            <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 18, letterSpacing: "-0.3px" }}>MedShift</span>
+            <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 18, letterSpacing: "-0.3px" }}>MedHire</span>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             {profile ? (
@@ -685,11 +685,11 @@ export default function App() {
             <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "1.25rem 1.5rem", marginBottom: "1rem" }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.4)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Disclaimer</div>
               <p style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, lineHeight: 1.8, margin: 0 }}>
-                MedShift is a job board platform and is not responsible for the accuracy, completeness, or legality of any job postings listed on this site. MedShift does not endorse any employer or candidate, and is not liable for any hiring decisions, employment arrangements, or outcomes resulting from connections made through this platform. Users are solely responsible for verifying credentials and conducting their own due diligence.
+                MedHire is a job board platform and is not responsible for the accuracy, completeness, or legality of any job postings listed on this site. MedHire does not endorse any employer or candidate, and is not liable for any hiring decisions, employment arrangements, or outcomes resulting from connections made through this platform. Users are solely responsible for verifying credentials and conducting their own due diligence.
               </p>
             </div>
             <div style={{ textAlign: "center" }}>
-              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 12 }}>© {new Date().getFullYear()} MedShift. All rights reserved.</span>
+              <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 12 }}>© {new Date().getFullYear()} MedHire. All rights reserved.</span>
             </div>
           </div>
         </div>
@@ -759,7 +759,7 @@ export default function App() {
           <div style={{ position: "relative" }}>
             <div onClick={() => setScreen("landing")} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "4rem", cursor: "pointer" }}>
               <div style={{ width: 40, height: 40, borderRadius: 12, background: COLORS.teal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>⚕️</div>
-              <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 20, letterSpacing: "-0.5px" }}>MedShift</span>
+              <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 20, letterSpacing: "-0.5px" }}>MedHire</span>
             </div>
             <h1 style={{ fontFamily: "'DM Serif Display', serif", fontSize: "clamp(2rem, 3vw, 2.8rem)", color: COLORS.white, lineHeight: 1.2, marginBottom: "1.5rem" }}>
               The smarter way to staff your practice
@@ -782,7 +782,7 @@ export default function App() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "3rem 2rem", background: COLORS.cream }}>
           <div style={{ width: "100%", maxWidth: 400 }} className="fade-up">
             <h2 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6, color: COLORS.navy }}>{authTab === "login" ? "Welcome back" : "Create an account"}</h2>
-            <p style={{ color: COLORS.gray400, fontSize: 14, marginBottom: "2rem" }}>{authTab === "login" ? "Log in to your MedShift account" : "Join thousands of healthcare professionals"}</p>
+            <p style={{ color: COLORS.gray400, fontSize: 14, marginBottom: "2rem" }}>{authTab === "login" ? "Log in to your MedHire account" : "Join thousands of healthcare professionals"}</p>
             <button onClick={() => setScreen("landing")} style={{ background: "none", border: "none", color: COLORS.teal, fontSize: 13, fontWeight: 600, padding: 0, marginBottom: "1.5rem", cursor: "pointer" }}>← Back to listings</button>
 
             {/* Tab toggle */}
@@ -844,7 +844,7 @@ export default function App() {
             {authError && <div style={{ background: COLORS.redLight, color: COLORS.red, padding: "10px 14px", borderRadius: 10, fontSize: 13, fontWeight: 500, marginBottom: 14 }}>{authError}</div>}
 
             <button className="primary" onClick={handleEmailAuth} disabled={loading || !email || !password || (authTab === "signup" && (!displayName || (setupUserType === "office" && !setupOffice)))} style={{ width: "100%", padding: "13px", fontSize: 15, fontWeight: 700, borderRadius: 12 }}>
-              {loading ? "Please wait…" : authTab === "login" ? "Log in to MedShift" : "Create my account"}
+              {loading ? "Please wait…" : authTab === "login" ? "Log in to MedHire" : "Create my account"}
             </button>
           </div>
         </div>
@@ -862,7 +862,7 @@ export default function App() {
           <div style={{ textAlign: "center", marginBottom: "2rem" }}>
             <div style={{ width: 60, height: 60, borderRadius: 18, background: COLORS.tealLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, margin: "0 auto 1rem" }}>👋</div>
             <h2 style={{ fontWeight: 800, fontSize: 22, marginBottom: 6 }}>One last step!</h2>
-            <p style={{ color: COLORS.gray400, fontSize: 14 }}>Tell us how you'll use MedShift</p>
+            <p style={{ color: COLORS.gray400, fontSize: 14 }}>Tell us how you'll use MedHire</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
@@ -944,7 +944,7 @@ export default function App() {
             <div onClick={() => setScreen("landing")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
               <div style={{ width: 34, height: 34, borderRadius: 10, background: COLORS.teal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚕️</div>
               <div>
-                <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 16, letterSpacing: "-0.3px" }}>MedShift</span>
+                <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 16, letterSpacing: "-0.3px" }}>MedHire</span>
                 {isProvider && <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, background: COLORS.teal, color: COLORS.white, padding: "2px 8px", borderRadius: 20 }}>Providers</span>}
                 <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 500, marginLeft: 8 }}>Hi, {profile.name?.split(" ")[0]} 👋</span>
               </div>
@@ -1056,9 +1056,9 @@ export default function App() {
         <div style={{ background: COLORS.navy, padding: "2rem 1.5rem", textAlign: "center", marginTop: "2rem" }}>
           <div onClick={() => setScreen("landing")} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 8, cursor: "pointer" }}>
             <div style={{ width: 28, height: 28, borderRadius: 8, background: COLORS.teal, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>⚕️</div>
-            <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 15 }}>MedShift</span>
+            <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 15 }}>MedHire</span>
           </div>
-          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: 0 }}>Connecting dental & medical offices with qualified assistants.</p>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, margin: 0 }}>Connecting dental & medical offices with qualified staff and providers.</p>
         </div>
 
         {/* Position detail modal */}
@@ -1273,7 +1273,7 @@ export default function App() {
           <div style={{ background: COLORS.white, borderRadius: 16, border: `1.5px solid ${COLORS.redLight}`, padding: "1.5rem", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: COLORS.red, marginBottom: 6 }}>Sign out</div>
             <div style={{ fontSize: 13, color: COLORS.gray400, marginBottom: 14 }}>You can log back in anytime with your email and password.</div>
-            <button onClick={handleSignOut} style={{ background: COLORS.redLight, color: COLORS.red, border: "none", padding: "10px 20px", borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Sign out of MedShift</button>
+            <button onClick={handleSignOut} style={{ background: COLORS.redLight, color: COLORS.red, border: "none", padding: "10px 20px", borderRadius: 10, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Sign out of MedHire</button>
           </div>
         </div>
       </>
@@ -1330,7 +1330,7 @@ export default function App() {
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 34, height: 34, borderRadius: 10, background: COLORS.amber, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>⚙️</div>
               <div>
-                <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 16 }}>MedShift Admin</span>
+                <span style={{ color: COLORS.white, fontWeight: 800, fontSize: 16 }}>MedHire Admin</span>
                 <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, marginLeft: 10 }}>Internal dashboard</span>
               </div>
             </div>
@@ -1526,7 +1526,7 @@ export default function App() {
           window.paypal.Buttons({
             style: { layout: "vertical", color: "gold", shape: "rect", label: "pay" },
             createOrder: (data, actions) => actions.order.create({
-              purchase_units: [{ amount: { value: amount }, description: isPosting ? "MedShift — Job Posting" : "MedShift — Resume Analysis" }]
+              purchase_units: [{ amount: { value: amount }, description: isPosting ? "MedHire — Job Posting" : "MedHire — Resume Analysis" }]
             }),
             onApprove: async (data, actions) => {
               await actions.order.capture();
@@ -1620,7 +1620,7 @@ export default function App() {
       const app = applications.find(a => a.id === appId);
       const next = applications.map(a => a.id === appId ? { ...a, status } : a);
       setApplications(next); await storageSet("ms4:applications", next);
-      if (app) await sendEmailNotification({ to: app.applicantEmail, subject: status === "hired" ? `You have been hired at ${profile.office}! - MedShift` : `Application update - MedShift`, body: status === "hired" ? `Hi ${app.applicantName}, congratulations! ${profile.office} has hired you. - MedShift` : `Hi ${app.applicantName}, thank you for applying. ${profile.office} has moved forward with other candidates. - MedShift` });
+      if (app) await sendEmailNotification({ to: app.applicantEmail, subject: status === "hired" ? `You have been hired at ${profile.office}! - MedHire` : `Application update - MedHire`, body: status === "hired" ? `Hi ${app.applicantName}, congratulations! ${profile.office} has hired you. - MedHire` : `Hi ${app.applicantName}, thank you for applying. ${profile.office} has moved forward with other candidates. - MedHire` });
       showToast(status === "hired" ? "Hired! Candidate notified." : "Declined.", status === "hired" ? "success" : "default");
     };
 
@@ -1901,7 +1901,7 @@ export default function App() {
       if (resumeData) {
         try { await storageSet(`ms4:resume:${app.id}`, resumeData); } catch { /* resume too large, skip */ }
       }
-      await sendEmailNotification({ to: detailPos.officeEmail, subject: `New applicant for ${detailPos.role} - MedShift`, body: `Hi ${detailPos.postedBy}, ${profile.name} (${profile.role}, ${profile.location}) applied for your ${detailPos.role} position.${applyMsg ? ` Note: "${applyMsg}"` : ""} - MedShift` });
+      await sendEmailNotification({ to: detailPos.officeEmail, subject: `New applicant for ${detailPos.role} - MedHire`, body: `Hi ${detailPos.postedBy}, ${profile.name} (${profile.role}, ${profile.location}) applied for your ${detailPos.role} position.${applyMsg ? ` Note: "${applyMsg}"` : ""} - MedHire` });
       setDetailPos(null); setApplyMsg(""); setAiMatch(null); setResumeFile(null); setResumeData(null);
       showToast("Application sent!", "success"); setLoading(false);
     };
@@ -1911,7 +1911,7 @@ export default function App() {
         <GlobalStyles />
         <Toast {...toast} />
         <MessagingModal />
-        <Header title={profile.name} sub={profile.role + " · " + (profile.location || "MedShift")} />
+        <Header title={profile.name} sub={profile.role + " · " + (profile.location || "MedHire")} />
 
         <div style={{ maxWidth: 800, margin: "0 auto", padding: "1.75rem 1.5rem" }}>
           {/* Tabs */}
